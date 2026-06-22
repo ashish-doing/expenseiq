@@ -1,0 +1,16 @@
+[project]
+name = "expenseiq"
+version = "0.1.0"
+description = "Business Expense Intelligence Agent with Safety Gate + Self-Correcting Loop"
+requires-python = ">=3.11"
+dependencies = [
+    "google-adk>=2.3.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "python-dotenv>=1.0.0",
+    "pytest>=8.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
