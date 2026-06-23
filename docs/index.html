@@ -134,6 +134,30 @@
     .result-card .r-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
     .result-card .r-val { font-size: 1.6rem; font-weight: 800; }
     .result-card .r-sub { font-size: 0.75rem; color: var(--dim); margin-top: 2px; }
+
+    /* FLOW VISUAL */
+    .flow-visual { margin-top: 40px; display: flex; flex-direction: column; align-items: center; gap: 0; }
+    .flow-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 8px 0; }
+    .flow-row.branches { gap: 16px; align-items: flex-start; }
+    .flow-node { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 20px; font-family: monospace; font-size: 0.82rem; font-weight: 700; color: var(--text); text-align: center; min-width: 160px; }
+    .flow-node.start { background: #052e16; border-color: var(--accent2); color: var(--accent2); }
+    .flow-node.gate { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,0.08); }
+    .flow-node.green-node { border-color: var(--accent2); color: var(--accent2); background: rgba(16,185,129,0.08); }
+    .flow-node.blue-node { border-color: var(--accent); color: var(--accent); background: rgba(59,130,246,0.08); }
+    .flow-node.red-node { border-color: var(--warning); color: var(--warning); background: rgba(245,158,11,0.08); }
+    .flow-node.accent { border-color: var(--accent); color: var(--accent); background: rgba(59,130,246,0.08); }
+    .flow-sublabel { font-size: 0.65rem; font-weight: 400; color: var(--muted); margin-top: 4px; font-family: 'Segoe UI', sans-serif; }
+    .flow-arrow { color: var(--muted); font-size: 1.2rem; }
+    .flow-branch { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .flow-branch-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; padding: 3px 10px; border-radius: 4px; }
+    .flow-branch-label.green { background: rgba(16,185,129,0.15); color: var(--accent2); }
+    .flow-branch-label.blue { background: rgba(59,130,246,0.15); color: var(--accent); }
+    .flow-branch-label.red { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .flow-branch-line { width: 2px; height: 24px; background: var(--border); }
+
+    .security-grid.four-col { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 900px) { .security-grid.four-col { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .security-grid.four-col { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -208,7 +232,7 @@
   <div class="section-label">Safety Gate</div>
   <h2>The <em>LLM never sees</em> the attack.</h2>
   <p class="section-sub">The security checkpoint runs before every LLM call, every time, with no exceptions. It's not a guardrail — it's a gate.</p>
-  <div class="security-grid">
+  <div class="security-grid four-col">
     <div class="sec-card">
       <h3><span>🔍</span> PII Redaction</h3>
       <p>SSN and credit card patterns are replaced before anything else happens — even before risk scoring.</p>
@@ -237,42 +261,35 @@
   <div class="section-label">Architecture</div>
   <h2>ADK 2.0 <em>Workflow Graph</em></h2>
   <p class="section-sub">Five nodes, one LoopAgent, three routing paths — all wired with conditional edges in Google ADK 2.0.</p>
-  <div class="flow">
-<span class="comment"># ExpenseIQ Agent Graph — ADK 2.0 Workflow</span>
-
-User submits expense JSON
-         │
-    <span class="node">[parse_expense]</span>         <span class="comment">← deserialize + normalize</span>
-         │
-    <span class="gate">[security_checkpoint]</span>   <span class="comment">← SAFETY GATE (runs always)</span>
-    PII redact → inject detect → risk score
-         │
-    ┌────┼──────────────────┐
-    │    │                  │
-    ▼    ▼                  ▼
-<span class="node">[auto_    </span><span class="loop">[ReviewLoop]    </span><span class="gate">[high_risk]</span>
-<span class="node">approve]  </span><span class="loop">LoopAgent       </span><span class="gate">ESCALATED  </span>
-<span class="node">No LLM    </span><span class="loop">max_iter=3      </span><span class="gate">LLM bypassed</span>
-    │    │                  │
-    │   <span class="loop">[LLMReviewer]</span>       │
-    │   <span class="comment">gemini-2.5-flash</span>    │
-    │   <span class="loop">→ review_reason</span>     │
-    │    │                  │
-    │   <span class="loop">[ReviewValidator]</span>    │
-    │   <span class="comment">checks 3 criteria:</span>  │
-    │   <span class="comment">business purpose ✓</span>  │
-    │   <span class="comment">dollar amount ✓</span>     │
-    │   <span class="comment">justification ✓</span>    │
-    │   <span class="loop">→ PASS: escalate</span>    │
-    │   <span class="comment">→ REVISE: retry</span>    │
-    │    │                  │
-    └────┤                  │
-         ▼                  │
-    <span class="node">[record_outcome]</span> ◄──────┘
-    writes to dashboard store
-         │
-    <span class="node">[FastAPI /dashboard]</span>
-    Chart.js CRM — live stats
+  <div class="flow-visual">
+    <div class="flow-row">
+      <div class="flow-node start">START</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">parse_expense</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node gate">security_checkpoint<div class="flow-sublabel">SAFETY GATE</div></div>
+    </div>
+    <div class="flow-branch-line"></div>
+    <div class="flow-row branches">
+      <div class="flow-branch">
+        <div class="flow-branch-label green">auto_approve</div>
+        <div class="flow-node green-node">auto_approve_node<div class="flow-sublabel">0 LLM calls · ~17ms</div></div>
+      </div>
+      <div class="flow-branch">
+        <div class="flow-branch-label blue">llm_review</div>
+        <div class="flow-node blue-node">ReviewLoop<div class="flow-sublabel">LoopAgent · max 3 iter</div></div>
+      </div>
+      <div class="flow-branch">
+        <div class="flow-branch-label red">high_risk</div>
+        <div class="flow-node red-node">high_risk_node<div class="flow-sublabel">LLM bypassed</div></div>
+      </div>
+    </div>
+    <div class="flow-branch-line"></div>
+    <div class="flow-row">
+      <div class="flow-node">record_outcome</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node accent">FastAPI /dashboard<div class="flow-sublabel">Chart.js CRM</div></div>
+    </div>
   </div>
 </section>
 
