@@ -64,6 +64,41 @@ $250 software       → Safety Gate → ReviewLoop → PASS on iter 1 → APPROV
 $999,999 + SSN + injection → Safety Gate → SSN redacted → risk 1.0 → ESCALATED [0 LLM calls]
 ```
 
+## Screenshots
+
+### Agent Graph — ADK 2.0 Playground
+*Full workflow graph: START → parse_expense → security_checkpoint (diamond, 3 routes) → auto_approve_node | ReviewLoop | high_risk_node → record_outcome → END*
+
+![Agent Graph](docs/screenshots/01-agent-graph.png)
+
+---
+
+### Path 1 — Auto-Approve (Events)
+*$45 team lunch: parse → security_checkpoint routes `auto_approve` → AUTO_APPROVED with risk_score: 0.1. Zero LLM calls.*
+
+![Auto Approve Events](docs/screenshots/02-auto-approve-events.png)
+
+---
+
+### Path 1 — Auto-Approve (Traces)
+*Total latency: 96.43ms. parse_expense: 15ms → security_checkpoint: 17ms → auto_approve_node: 17ms → record_outcome: 20ms. No model inference — pure deterministic.*
+
+![Auto Approve Traces](docs/screenshots/03-auto-approve-traces.png)
+
+---
+
+### Path 3 — Security Gate: Injection + PII Caught
+*$999,999 expense with "Ignore previous instructions" + SSN: Event #2 shows raw SSN visible. Event #3: SSN → [REDACTED SSN], route: high_risk. Event #4: status ESCALATED, risk_score: 1, security_alert: true, redacted: ["SSN"]. The LLM was never called.*
+
+![Security Gate](docs/screenshots/04-security-gate.png)
+
+---
+
+### Live CRM Dashboard
+*FastAPI + Chart.js dashboard at /dashboard: 4 KPI cards, spend-by-category donut, monthly spend bar chart, approval rate doughnut, recent expenses table with status badges and risk bars. Auto-refreshes every 10 seconds.*
+
+![Dashboard](docs/screenshots/05-dashboard.png)
+
 ---
 
 ## 🏗️ Architecture
