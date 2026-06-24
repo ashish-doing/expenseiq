@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/MCP-Developer%20Knowledge-00B4D8?style=for-the-badge" />
   <img src="https://img.shields.io/badge/FastAPI-Dashboard-009688?style=for-the-badge&logo=fastapi" />
   <img src="https://img.shields.io/badge/Chart.js-CRM%20Dashboard-FF6384?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Tests-10%20passing-brightgreen?style=for-the-badge&logo=pytest" />
+  <img src="https://img.shields.io/badge/Tests-35%20passing-brightgreen?style=for-the-badge&logo=pytest" />
   <img src="https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python" />
   <img src="https://img.shields.io/badge/Track-Agents%20for%20Business-orange?style=for-the-badge" />
 </p>
@@ -322,8 +322,20 @@ The `-s` flag prints the full summary table to stdout after all cases run.
 
 ### Results
 
+```bash
+uv run pytest tests/test_eval.py -v -s
 ```
-Run uv run pytest tests/test_eval.py -v -s to see results
+
+```
+  Per-category accuracy:
+    auto_approve   [████████████████████]  10/10  (100.0%)
+    llm_review     [████████████████████]  8/8    (100.0%)
+    high_risk      [████████████████████]  7/7    (100.0%)
+
+  No failures — all cases routed correctly.
+
+  Overall accuracy : 25/25  (100.0%)  [PASS]
+  CI threshold     : 95%
 ```
 
 ## ⚡ Quick Start
@@ -420,7 +432,9 @@ expenseiq/
 │   └── static/
 │       └── index.html    # Chart.js CRM dashboard — 3 charts + expense table
 ├── tests/
-│   └── test_agent.py     # 10 outcome-based pytest tests
+│   ├── test_agent.py      # 10 outcome-based security + store tests
+│   ├── test_eval.py       # 30 eval harness tests — routing accuracy CI gate
+│   └── eval_expenses.json # 25 labeled synthetic expenses
 ├── .agents/
 │   ├── CONTEXT.md        # Antigravity persistent rules
 │   ├── hooks.json        # PreToolUse hook — blocks destructive commands
