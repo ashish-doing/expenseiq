@@ -63,6 +63,9 @@ async def root():
 @fastapi_app.post("/apps/expense_agent/trigger")
 async def trigger_expense(request: Request):
     """Submit an expense for agent processing."""
+    import uuid
+    from dashboard.store import PENDING_APPROVALS
+    
     body = await request.json()
     user_id = body.get("submitter", "default-user").replace("@", "_").replace(".", "_")
 
@@ -86,6 +89,29 @@ async def trigger_expense(request: Request):
         if hasattr(event, 'output') and event.output:
             if isinstance(event.output, dict) and event.output.get("status"):
                 final_outcome = event.output
+
+    # Route ESCALATED expenses to PENDING_APPROVALS for human review
+    if final_outcome and final_outcome.get("status") == "ESCALATED":
+        expense_id = str(uuid.uuid4())
+        pending_record = {
+            "expense_id": expense_id,
+            "submitter": body.get("submitter", "unknown"),
+            "amount": body.get("amount", 0),
+            "category": body.get("category", "unknown"),
+            "description": body.get("description", ""),
+            "risk_score": final_outcome.get("risk_score", 0),
+            "security_alert": final_outcome.get("security_alert", False),
+            "status": "ESCALATED",
+            "created_at": __import__('datetime').datetime.utcnow().isoformat(),
+            "reason": final_outcome.get("reason", ""),
+        }
+        PENDING_APPROVALS.append(pending_record)
+        return JSONResponse({
+            "status": "escalated",
+            "expense_id": expense_id,
+            "outcome": final_outcome,
+            "message": "Expense flagged for human review",
+        })
 
     return JSONResponse({
         "status": "processed",

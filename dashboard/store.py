@@ -1,86 +1,44 @@
-"""
-In-memory expense store with seed data for dashboard.
-"""
 from datetime import datetime, timedelta
 from typing import Any
-import random
 
-# ─── Seed data so dashboard looks populated immediately ───────────────────────
+PENDING_APPROVALS: list[dict[str, Any]] = []
+
 _seed_date = datetime.utcnow()
 
-EXPENSE_STORE: list[dict] = [
-    {
-        "expense": {"amount": 85.0, "category": "meals", "submitter": "alice@corp.com", "description": "Team lunch Q2 planning", "date": (_seed_date - timedelta(days=30)).date().isoformat()},
-        "status": "AUTO_APPROVED", "risk_score": 0.1, "review_reason": None,
-        "timestamp": (_seed_date - timedelta(days=30)).isoformat(),
-    },
-    {
-        "expense": {"amount": 1200.0, "category": "travel", "submitter": "bob@corp.com", "description": "Flight to AWS re:Invent conference", "date": (_seed_date - timedelta(days=25)).date().isoformat()},
-        "status": "APPROVED", "risk_score": 0.75, "review_reason": "Approved: $1200 travel for AWS re:Invent aligns with cloud strategy goals.",
-        "timestamp": (_seed_date - timedelta(days=25)).isoformat(),
-    },
-    {
-        "expense": {"amount": 450.0, "category": "software", "submitter": "carol@corp.com", "description": "Annual JetBrains IDE license", "date": (_seed_date - timedelta(days=20)).date().isoformat()},
-        "status": "APPROVED", "risk_score": 0.4, "review_reason": "Approved: $450 JetBrains license is standard dev tooling with clear productivity ROI.",
-        "timestamp": (_seed_date - timedelta(days=20)).isoformat(),
-    },
-    {
-        "expense": {"amount": 50.0, "category": "office", "submitter": "dave@corp.com", "description": "Desk supplies and printer paper", "date": (_seed_date - timedelta(days=15)).date().isoformat()},
-        "status": "AUTO_APPROVED", "risk_score": 0.1, "review_reason": None,
-        "timestamp": (_seed_date - timedelta(days=15)).isoformat(),
-    },
-    {
-        "expense": {"amount": 2500.0, "category": "hardware", "submitter": "eve@corp.com", "description": "MacBook Pro for new hire onboarding", "date": (_seed_date - timedelta(days=10)).date().isoformat()},
-        "status": "ESCALATED", "risk_score": 0.75, "review_reason": None,
-        "timestamp": (_seed_date - timedelta(days=10)).isoformat(),
-    },
-    {
-        "expense": {"amount": 300.0, "category": "training", "submitter": "frank@corp.com", "description": "Udemy business subscription Q3", "date": (_seed_date - timedelta(days=5)).date().isoformat()},
-        "status": "APPROVED", "risk_score": 0.4, "review_reason": "Approved: $300 Udemy subscription supports team upskilling initiative.",
-        "timestamp": (_seed_date - timedelta(days=5)).isoformat(),
-    },
+EXPENSE_STORE: list[dict[str, Any]] = [
+    {"expense_id": "seed-001", "submitter": "alice@corp.com", "amount": 85.0, "category": "meals", "description": "Team lunch Q2 planning", "risk_score": 0.1, "security_alert": False, "status": "APPROVED", "created_at": (_seed_date - timedelta(days=30)).isoformat()},
+    {"expense_id": "seed-002", "submitter": "bob@corp.com", "amount": 1200.0, "category": "travel", "description": "Flight to AWS re:Invent conference", "risk_score": 0.75, "security_alert": False, "status": "APPROVED", "created_at": (_seed_date - timedelta(days=25)).isoformat()},
+    {"expense_id": "seed-003", "submitter": "carol@corp.com", "amount": 450.0, "category": "software", "description": "Annual JetBrains IDE license", "risk_score": 0.4, "security_alert": False, "status": "APPROVED", "created_at": (_seed_date - timedelta(days=20)).isoformat()},
+    {"expense_id": "seed-004", "submitter": "dave@corp.com", "amount": 50.0, "category": "office", "description": "Desk supplies and printer paper", "risk_score": 0.1, "security_alert": False, "status": "APPROVED", "created_at": (_seed_date - timedelta(days=15)).isoformat()},
+    {"expense_id": "seed-005", "submitter": "eve@corp.com", "amount": 2500.0, "category": "hardware", "description": "MacBook Pro for new hire onboarding", "risk_score": 0.75, "security_alert": False, "status": "ESCALATED", "created_at": (_seed_date - timedelta(days=10)).isoformat()},
+    {"expense_id": "seed-006", "submitter": "frank@corp.com", "amount": 300.0, "category": "training", "description": "Udemy business subscription Q3", "risk_score": 0.4, "security_alert": False, "status": "APPROVED", "created_at": (_seed_date - timedelta(days=5)).isoformat()},
 ]
 
 
 def record_expense(outcome: dict) -> None:
-    """Add a processed expense outcome to the store."""
-    outcome["timestamp"] = datetime.utcnow().isoformat()
+    outcome["created_at"] = datetime.utcnow().isoformat()
     EXPENSE_STORE.append(outcome)
 
 
-def get_stats() -> dict:
-    """Compute dashboard stats from all stored expenses."""
+def get_stats() -> dict[str, Any]:
     total = len(EXPENSE_STORE)
+    total_amount = sum(float(e.get("amount", 0)) for e in EXPENSE_STORE)
     approved = sum(1 for e in EXPENSE_STORE if e.get("status") in ("APPROVED", "AUTO_APPROVED"))
     rejected = sum(1 for e in EXPENSE_STORE if e.get("status") == "REJECTED")
     escalated = sum(1 for e in EXPENSE_STORE if e.get("status") == "ESCALATED")
-
+    risk_scores = [float(e.get("risk_score", 0)) for e in EXPENSE_STORE]
+    avg_risk = sum(risk_scores) / len(risk_scores) if risk_scores else 0.0
     by_category: dict[str, float] = {}
-    by_month: dict[str, float] = {}
-
-    for entry in EXPENSE_STORE:
-        exp = entry.get("expense", {})
-        cat = exp.get("category", "other")
-        amount = float(exp.get("amount", 0))
-        by_category[cat] = by_category.get(cat, 0) + amount
-
-        ts = entry.get("timestamp", "")
-        month = ts[:7] if ts else "unknown"
-        by_month[month] = by_month.get(month, 0) + amount
-
-    risk_scores = [e.get("risk_score", 0) for e in EXPENSE_STORE]
-    avg_risk = sum(risk_scores) / len(risk_scores) if risk_scores else 0
-
-    recent = sorted(EXPENSE_STORE, key=lambda x: x.get("timestamp", ""), reverse=True)[:10]
-
+    for e in EXPENSE_STORE:
+        cat = e.get("category", "other")
+        by_category[cat] = by_category.get(cat, 0.0) + float(e.get("amount", 0))
     return {
-        "total_submitted": total,
-        "total_approved": approved,
-        "total_rejected": rejected,
-        "total_escalated": escalated,
-        "approval_rate": round((approved / total * 100) if total else 0, 1),
-        "by_category": by_category,
-        "by_month": dict(sorted(by_month.items())),
+        "total_expenses": total,
+        "total_amount": round(total_amount, 2),
+        "approved": approved,
+        "rejected": rejected,
+        "escalated": escalated,
+        "pending": len(PENDING_APPROVALS),
         "avg_risk_score": round(avg_risk, 3),
-        "recent_expenses": recent,
+        "by_category": by_category,
     }
