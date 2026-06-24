@@ -297,6 +297,35 @@ Pattern: assert on **outcomes** (return values, state mutations), not internal m
 
 ---
 
+## Evaluation
+
+ExpenseIQ includes a deterministic eval harness that validates routing accuracy against 25 labeled synthetic expenses, exercising all three decision paths without spinning up the full ADK agent.
+
+### Methodology
+
+| Aspect | Detail |
+|---|---|
+| Dataset | `tests/eval_expenses.json` — 25 synthetic expenses, manually labeled |
+| Distribution | 10 `auto_approve` · 8 `llm_review` · 7 `high_risk` |
+| High-risk coverage | 3 injection-only · 2 injection + PII (SSN/CC) · 2 injection + high-amount |
+| What's tested | `redact_pii()` → `detect_injection()` → `compute_risk_score()` → routing branch |
+| CI gate | Overall accuracy ≥ 95%; per-category accuracy ≥ 85% |
+| Isolation | Pure Python — no ADK agent, no LLM calls, no network |
+
+### Running the Eval
+
+```bash
+uv run pytest tests/test_eval.py -v -s
+```
+
+The `-s` flag prints the full summary table to stdout after all cases run.
+
+### Results
+
+```
+Run uv run pytest tests/test_eval.py -v -s to see results
+```
+
 ## ⚡ Quick Start
 
 ### Prerequisites
