@@ -6,243 +6,107 @@
   <title>ExpenseIQ — Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    /* ── Reset & base ───────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg:        #0d1117;
-      --surface:   #161b22;
-      --border:    #30363d;
-      --text:      #e6edf3;
-      --muted:     #8b949e;
-      --accent:    #58a6ff;
-      --green:     #3fb950;
-      --red:       #f85149;
-      --yellow:    #d29922;
-      --purple:    #a371f7;
-      --radius:    8px;
+      --bg: #0d1117; --surface: #161b22; --surface2: #1c2128;
+      --border: #30363d; --text: #e6edf3; --muted: #8b949e;
+      --accent: #58a6ff; --green: #3fb950; --red: #f85149;
+      --yellow: #d29922; --purple: #a371f7; --radius: 8px;
     }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-size: 14px;
-      min-height: 100vh;
-    }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; min-height: 100vh; }
 
-    /* ── Layout ──────────────────────────────────────────────────────────── */
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    header h1 { font-size: 18px; font-weight: 600; }
-    header span.sub { color: var(--muted); font-size: 13px; }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; gap: 10px; }
+    header h1 { font-size: 17px; font-weight: 700; }
+    .live-badge { background: var(--green); color: #000; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 10px; letter-spacing: 0.05em; }
+    .header-time { margin-left: auto; color: var(--muted); font-size: 12px; }
 
-    main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    main { max-width: 1300px; margin: 0 auto; padding: 20px 24px; }
 
-    /* ── Stat cards ───────────────────────────────────────────────────────── */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-    }
-    .stat-card .label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
-    .stat-card .value { font-size: 28px; font-weight: 700; }
-    .stat-card.green  .value { color: var(--green); }
-    .stat-card.red    .value { color: var(--red); }
-    .stat-card.yellow .value { color: var(--yellow); }
-    .stat-card.purple .value { color: var(--purple); }
-    .stat-card.accent .value { color: var(--accent); }
+    /* KPI row — all in one line */
+    .kpi-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 20px; }
+    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+    .kpi .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+    .kpi .value { font-size: 22px; font-weight: 700; }
+    .kpi.blue .value   { color: var(--accent); }
+    .kpi.green .value  { color: var(--green); }
+    .kpi.red .value    { color: var(--red); }
+    .kpi.yellow .value { color: var(--yellow); }
+    .kpi.purple .value { color: var(--purple); }
+    .kpi.white .value  { color: var(--text); }
 
-    /* ── Charts row ───────────────────────────────────────────────────────── */
-    .charts-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-    @media (max-width: 720px) { .charts-row { grid-template-columns: 1fr; } }
-    .chart-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-    }
-    .chart-card h2 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
-    .chart-card canvas { max-height: 220px; }
+    /* Charts */
+    .charts-row { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-bottom: 20px; }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .chart-card h2 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+    .chart-card canvas { max-height: 200px; }
 
-    /* ── Section header ───────────────────────────────────────────────────── */
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .section-header h2 { font-size: 15px; font-weight: 600; }
-    .badge {
-      background: var(--yellow);
-      color: #000;
-      font-size: 11px;
-      font-weight: 700;
-      border-radius: 20px;
-      padding: 2px 8px;
-      display: none; /* shown by JS when count > 0 */
-    }
+    /* Section header */
+    .section-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .section-hdr h2 { font-size: 14px; font-weight: 600; }
+    .badge { background: var(--yellow); color: #000; font-size: 10px; font-weight: 800; border-radius: 20px; padding: 1px 7px; display: none; }
 
-    /* ── Table card ───────────────────────────────────────────────────────── */
-    .table-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 24px;
-      overflow: hidden;
-    }
+    /* Tables */
+    .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; overflow: hidden; }
     table { width: 100%; border-collapse: collapse; }
-    th {
-      background: #1c2128;
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-      padding: 10px 14px;
-      text-align: left;
-    }
-    td { padding: 10px 14px; border-top: 1px solid var(--border); vertical-align: middle; }
-    tbody tr:hover { background: rgba(255,255,255,.03); }
-    .empty-row td { color: var(--muted); text-align: center; padding: 24px; }
+    th { background: var(--surface2); color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; padding: 9px 14px; text-align: left; }
+    td { padding: 10px 14px; border-top: 1px solid var(--border); vertical-align: middle; font-size: 13px; }
+    tbody tr:hover { background: rgba(255,255,255,.02); }
+    .empty td { color: var(--muted); text-align: center; padding: 20px; }
 
-    /* ── Status pill ──────────────────────────────────────────────────────── */
-    .pill {
-      display: inline-block;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 10px;
-    }
-    .pill-approved  { background: rgba(63,185,80,.15);  color: var(--green); }
-    .pill-rejected  { background: rgba(248,81,73,.15);  color: var(--red); }
-    .pill-escalated { background: rgba(210,153,34,.15); color: var(--yellow); }
-    .pill-pending   { background: rgba(163,113,247,.15);color: var(--purple); }
+    /* Pills */
+    .pill { display: inline-block; border-radius: 20px; font-size: 11px; font-weight: 600; padding: 2px 9px; }
+    .pill-APPROVED, .pill-AUTO_APPROVED { background: rgba(63,185,80,.15); color: var(--green); }
+    .pill-REJECTED  { background: rgba(248,81,73,.15); color: var(--red); }
+    .pill-ESCALATED { background: rgba(210,153,34,.15); color: var(--yellow); }
+    .pill-PENDING   { background: rgba(163,113,247,.15); color: var(--purple); }
 
-    /* ── Risk bar ─────────────────────────────────────────────────────────── */
-    .risk-wrap { display: flex; align-items: center; gap: 8px; }
-    .risk-bar { flex: 1; height: 4px; background: var(--border); border-radius: 2px; }
+    /* Risk bar */
+    .risk-wrap { display: flex; align-items: center; gap: 6px; }
+    .risk-bar { width: 60px; height: 4px; background: var(--border); border-radius: 2px; }
     .risk-fill { height: 100%; border-radius: 2px; }
-    .risk-low  { background: var(--green); }
-    .risk-med  { background: var(--yellow); }
-    .risk-high { background: var(--red); }
+    .r-low  { background: var(--green); }
+    .r-med  { background: var(--yellow); }
+    .r-high { background: var(--red); }
 
-    /* ── Security alert flag ──────────────────────────────────────────────── */
-    .alert-flag { color: var(--red); font-size: 16px; }
-    .no-alert   { color: var(--muted); font-size: 12px; }
-
-    /* ── Action buttons ───────────────────────────────────────────────────── */
-    .btn {
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 5px 14px;
-      transition: opacity .15s;
-    }
+    /* Buttons */
+    .btn { border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600; padding: 5px 12px; transition: opacity .15s; }
     .btn:hover { opacity: .8; }
-    .btn:disabled { opacity: .4; cursor: default; }
-    .btn-approve { background: var(--green);  color: #000; }
-    .btn-reject  { background: var(--red);    color: #fff; }
-    .btn-confirm { background: var(--yellow); color: #000; margin-top: 6px; }
+    .btn-approve { background: var(--green); color: #000; }
+    .btn-reject  { background: var(--red); color: #fff; }
+    .btn-confirm { background: var(--yellow); color: #000; margin-top: 5px; }
+    .action-wrap { display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; }
+    .reject-form { display: none; margin-top: 6px; }
+    .reject-form input { background: var(--bg); border: 1px solid var(--border); border-radius: 5px; color: var(--text); font-size: 12px; padding: 4px 8px; width: 180px; }
 
-    /* ── Reject reason input ──────────────────────────────────────────────── */
-    .reject-form { display: none; margin-top: 8px; }
-    .reject-form input {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-size: 12px;
-      padding: 5px 10px;
-      width: 100%;
-    }
-    .reject-form input::placeholder { color: var(--muted); }
-
-    /* ── Toast ────────────────────────────────────────────────────────────── */
-    #toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-size: 13px;
-      padding: 12px 20px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .3s;
-      z-index: 999;
-    }
+    /* Toast */
+    #toast { position: fixed; bottom: 20px; right: 20px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 13px; padding: 10px 18px; opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 999; }
     #toast.show { opacity: 1; }
   </style>
 </head>
 <body>
-
 <header>
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
-  </svg>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
   <h1>ExpenseIQ</h1>
-  <span class="sub">AI Agent Dashboard</span>
+  <span class="live-badge">LIVE</span>
+  <span class="header-time" id="last-updated">—</span>
 </header>
 
 <main>
-
-  <!-- ── Stat cards ── -->
-  <div class="stats-grid">
-    <div class="stat-card accent">
-      <div class="label">Total Expenses</div>
-      <div class="value" id="s-total">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Total Amount</div>
-      <div class="value" id="s-amount" style="color:var(--text)">—</div>
-    </div>
-    <div class="stat-card green">
-      <div class="label">Approved</div>
-      <div class="value" id="s-approved">—</div>
-    </div>
-    <div class="stat-card red">
-      <div class="label">Rejected</div>
-      <div class="value" id="s-rejected">—</div>
-    </div>
-    <div class="stat-card yellow">
-      <div class="label">Escalated</div>
-      <div class="value" id="s-escalated">—</div>
-    </div>
-    <div class="stat-card purple">
-      <div class="label">Awaiting Review</div>
-      <div class="value" id="s-pending">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Avg Risk Score</div>
-      <div class="value" id="s-risk" style="color:var(--text)">—</div>
-    </div>
+  <!-- KPI row -->
+  <div class="kpi-row">
+    <div class="kpi blue"><div class="label">Total</div><div class="value" id="k-total">—</div></div>
+    <div class="kpi white"><div class="label">Amount</div><div class="value" id="k-amount">—</div></div>
+    <div class="kpi green"><div class="label">Approved</div><div class="value" id="k-approved">—</div></div>
+    <div class="kpi red"><div class="label">Rejected</div><div class="value" id="k-rejected">—</div></div>
+    <div class="kpi yellow"><div class="label">Escalated</div><div class="value" id="k-escalated">—</div></div>
+    <div class="kpi purple"><div class="label">Pending</div><div class="value" id="k-pending">—</div></div>
+    <div class="kpi white"><div class="label">Avg Risk</div><div class="value" id="k-risk">—</div></div>
   </div>
 
-  <!-- ── Charts ── -->
+  <!-- Charts -->
   <div class="charts-row">
     <div class="chart-card">
-      <h2>Expense Status Distribution</h2>
+      <h2>Status Distribution</h2>
       <canvas id="chartStatus"></canvas>
     </div>
     <div class="chart-card">
@@ -251,294 +115,157 @@
     </div>
   </div>
 
-  <!-- ── Pending Approvals ── -->
-  <div class="section-header">
-    <h2>Pending Approvals</h2>
+  <!-- Pending Approvals -->
+  <div class="section-hdr">
+    <h2>🔴 Pending Approvals</h2>
     <span class="badge" id="pending-badge">0</span>
   </div>
   <div class="table-card">
     <table>
-      <thead>
-        <tr>
-          <th>Submitter</th>
-          <th>Amount</th>
-          <th>Category</th>
-          <th>Risk Score</th>
-          <th>Security Alert</th>
-          <th>Submitted</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="pending-body">
-        <tr class="empty-row"><td colspan="7">No expenses pending approval</td></tr>
-      </tbody>
+      <thead><tr><th>Submitter</th><th>Amount</th><th>Category</th><th>Risk</th><th>Alert</th><th>Submitted</th><th>Action</th></tr></thead>
+      <tbody id="pending-body"><tr class="empty"><td colspan="7">No expenses pending approval</td></tr></tbody>
     </table>
   </div>
 
-  <!-- ── Recent Expenses ── -->
-  <div class="section-header">
-    <h2>Recent Expenses</h2>
-  </div>
+  <!-- Recent Expenses -->
+  <div class="section-hdr"><h2>Recent Expenses</h2></div>
   <div class="table-card">
     <table>
-      <thead>
-        <tr>
-          <th>Submitter</th>
-          <th>Amount</th>
-          <th>Category</th>
-          <th>Risk Score</th>
-          <th>Status</th>
-          <th>Submitted</th>
-        </tr>
-      </thead>
-      <tbody id="expenses-body">
-        <tr class="empty-row"><td colspan="6">No expenses recorded yet</td></tr>
-      </tbody>
+      <thead><tr><th>Submitter</th><th>Amount</th><th>Category</th><th>Risk</th><th>Status</th><th>Submitted</th></tr></thead>
+      <tbody id="expenses-body"><tr class="empty"><td colspan="6">No expenses yet</td></tr></tbody>
     </table>
   </div>
-
 </main>
-
 <div id="toast"></div>
 
 <script>
-// ── Chart instances ────────────────────────────────────────────────────────
-let statusChart = null;
-let categoryChart = null;
-
-const CHART_COLORS = {
-  approved:  '#3fb950',
-  rejected:  '#f85149',
-  escalated: '#d29922',
-  pending:   '#a371f7',
-  border:    '#30363d',
-};
+let statusChart, categoryChart;
 
 function initCharts() {
-  const ctxStatus = document.getElementById('chartStatus').getContext('2d');
-  statusChart = new Chart(ctxStatus, {
+  statusChart = new Chart(document.getElementById('chartStatus'), {
     type: 'doughnut',
-    data: {
-      labels: ['Approved', 'Rejected', 'Escalated'],
-      datasets: [{
-        data: [0, 0, 0],
-        backgroundColor: [CHART_COLORS.approved, CHART_COLORS.rejected, CHART_COLORS.escalated],
-        borderColor: '#161b22',
-        borderWidth: 2,
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { labels: { color: '#8b949e', font: { size: 12 } } } }
-    }
+    data: { labels: ['Approved', 'Rejected', 'Escalated'], datasets: [{ data: [0,0,0], backgroundColor: ['#3fb950','#f85149','#d29922'], borderColor: '#161b22', borderWidth: 2 }] },
+    options: { responsive: true, plugins: { legend: { labels: { color: '#8b949e', font: { size: 11 } } } } }
   });
-
-  const ctxCat = document.getElementById('chartCategory').getContext('2d');
-  categoryChart = new Chart(ctxCat, {
+  categoryChart = new Chart(document.getElementById('chartCategory'), {
     type: 'bar',
-    data: { labels: [], datasets: [{ data: [], backgroundColor: '#58a6ff', borderRadius: 4 }] },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
-        y: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
-      }
-    }
+    data: { labels: [], datasets: [{ data: [], backgroundColor: '#58a6ff', borderRadius: 4, label: 'Spend ($)' }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }, y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } } } }
   });
 }
 
-// ── Utilities ──────────────────────────────────────────────────────────────
-function fmtAmount(n) {
-  return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function fmtDate(iso) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString();
-}
-function riskClass(r) {
-  if (r >= 0.7) return 'risk-high';
-  if (r >= 0.4) return 'risk-med';
-  return 'risk-low';
-}
-function statusPill(s) {
-  const map = {
-    APPROVED: 'pill-approved', REJECTED: 'pill-rejected',
-    ESCALATED: 'pill-escalated', PENDING: 'pill-pending',
-  };
-  const cls = map[s] || 'pill-escalated';
-  return `<span class="pill ${cls}">${s}</span>`;
-}
+function fmt$(n) { return isNaN(n) ? '$—' : '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmtDate(iso) { return iso ? new Date(iso).toLocaleString() : '—'; }
 function riskBar(r) {
-  const pct = Math.round(r * 100);
-  return `<div class="risk-wrap">
-    <div class="risk-bar"><div class="risk-fill ${riskClass(r)}" style="width:${pct}%"></div></div>
-    <span style="font-size:11px;color:var(--muted);min-width:28px">${pct}%</span>
-  </div>`;
+  const pct = Math.round((r||0)*100);
+  const cls = r >= 0.7 ? 'r-high' : r >= 0.4 ? 'r-med' : 'r-low';
+  return `<div class="risk-wrap"><div class="risk-bar"><div class="risk-fill ${cls}" style="width:${pct}%"></div></div><span style="font-size:11px;color:var(--muted)">${pct}%</span></div>`;
+}
+function pill(s) { return `<span class="pill pill-${s}">${s}</span>`; }
+
+let toastT;
+function toast(msg) { const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 3000); }
+
+function showRejectForm(id) {
+  const f = document.getElementById('rf-'+id);
+  f.style.display = f.style.display === 'block' ? 'none' : 'block';
 }
 
-// ── Toast ──────────────────────────────────────────────────────────────────
-let toastTimer = null;
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+async function approveExpense(id) {
+  document.getElementById('row-'+id).style.opacity = '0.4';
+  try {
+    const r = await fetch('/api/approve/'+id, { method: 'POST' });
+    if (!r.ok) throw new Error((await r.json()).detail);
+    toast('✅ Expense approved'); await refresh();
+  } catch(e) { toast('❌ '+e.message); document.getElementById('row-'+id).style.opacity='1'; }
 }
 
-// ── Render pending approvals ───────────────────────────────────────────────
+async function rejectExpense(id) {
+  const reason = document.getElementById('rr-'+id)?.value.trim() || '';
+  document.getElementById('row-'+id).style.opacity = '0.4';
+  try {
+    const r = await fetch('/api/reject/'+id, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({reason}) });
+    if (!r.ok) throw new Error((await r.json()).detail);
+    toast('🚫 Expense rejected'); await refresh();
+  } catch(e) { toast('❌ '+e.message); document.getElementById('row-'+id).style.opacity='1'; }
+}
+
 function renderPending(items) {
   const badge = document.getElementById('pending-badge');
   badge.textContent = items.length;
   badge.style.display = items.length > 0 ? 'inline-block' : 'none';
-
   const tbody = document.getElementById('pending-body');
-  if (!items.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No expenses pending approval</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = items.map(e => {
-    const id = e.expense_id;
-    const alertIcon = e.security_alert
-      ? `<span class="alert-flag" title="Security alert flagged">⚠️</span>`
-      : `<span class="no-alert">—</span>`;
-
-    return `
-    <tr id="row-${id}">
-      <td>${e.submitter || '—'}</td>
-      <td>${fmtAmount(e.amount)}</td>
-      <td>${e.category || '—'}</td>
-      <td>${riskBar(e.risk_score || 0)}</td>
-      <td>${alertIcon}</td>
+  if (!items.length) { tbody.innerHTML = '<tr class="empty"><td colspan="7">No expenses pending approval</td></tr>'; return; }
+  tbody.innerHTML = items.map(e => `
+    <tr id="row-${e.expense_id}">
+      <td>${e.submitter||'—'}</td><td>${fmt$(e.amount)}</td><td>${e.category||'—'}</td>
+      <td>${riskBar(e.risk_score)}</td>
+      <td>${e.security_alert ? '⚠️' : '—'}</td>
       <td style="color:var(--muted);font-size:12px">${fmtDate(e.created_at)}</td>
       <td>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start">
-          <button class="btn btn-approve" onclick="approveExpense('${id}')">✓ Approve</button>
+        <div class="action-wrap">
+          <button class="btn btn-approve" onclick="approveExpense('${e.expense_id}')">✓ Approve</button>
           <div>
-            <button class="btn btn-reject" onclick="showRejectForm('${id}')">✕ Reject</button>
-            <div class="reject-form" id="rform-${id}">
-              <input type="text" id="rreason-${id}" placeholder="Reason (optional)" />
-              <button class="btn btn-confirm" onclick="rejectExpense('${id}')">Confirm Reject</button>
+            <button class="btn btn-reject" onclick="showRejectForm('${e.expense_id}')">✕ Reject</button>
+            <div class="reject-form" id="rf-${e.expense_id}">
+              <input type="text" id="rr-${e.expense_id}" placeholder="Reason (optional)" />
+              <button class="btn btn-confirm" onclick="rejectExpense('${e.expense_id}')">Confirm</button>
             </div>
           </div>
         </div>
       </td>
-    </tr>`;
-  }).join('');
-}
-
-function showRejectForm(id) {
-  const form = document.getElementById(`rform-${id}`);
-  form.style.display = form.style.display === 'block' ? 'none' : 'block';
-}
-
-// ── Approve ────────────────────────────────────────────────────────────────
-async function approveExpense(id) {
-  const row = document.getElementById(`row-${id}`);
-  if (row) row.style.opacity = '0.5';
-
-  try {
-    const res = await fetch(`/api/approve/${id}`, { method: 'POST' });
-    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
-    showToast('✅ Expense approved');
-    await refresh();
-  } catch (err) {
-    showToast('❌ ' + err.message);
-    if (row) row.style.opacity = '1';
-  }
-}
-
-// ── Reject ─────────────────────────────────────────────────────────────────
-async function rejectExpense(id) {
-  const reasonEl = document.getElementById(`rreason-${id}`);
-  const reason = reasonEl ? reasonEl.value.trim() : '';
-  const row = document.getElementById(`row-${id}`);
-  if (row) row.style.opacity = '0.5';
-
-  try {
-    const res = await fetch(`/api/reject/${id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason }),
-    });
-    if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
-    showToast('🚫 Expense rejected');
-    await refresh();
-  } catch (err) {
-    showToast('❌ ' + err.message);
-    if (row) row.style.opacity = '1';
-  }
-}
-
-// ── Render recent expenses ─────────────────────────────────────────────────
-function renderExpenses(items) {
-  const tbody = document.getElementById('expenses-body');
-  if (!items.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No expenses recorded yet</td></tr>';
-    return;
-  }
-  tbody.innerHTML = items.slice(0, 50).map(e => `
-    <tr>
-      <td>${e.submitter || '—'}</td>
-      <td>${fmtAmount(e.amount)}</td>
-      <td>${e.category || '—'}</td>
-      <td>${riskBar(e.risk_score || 0)}</td>
-      <td>${statusPill(e.status)}</td>
-      <td style="color:var(--muted);font-size:12px">${fmtDate(e.created_at)}</td>
     </tr>`).join('');
 }
 
-// ── Update stat cards ──────────────────────────────────────────────────────
-function updateStats(s) {
-  document.getElementById('s-total').textContent    = s.total_expenses ?? '—';
-  document.getElementById('s-amount').textContent   = fmtAmount(s.total_amount ?? 0);
-  document.getElementById('s-approved').textContent = s.approved ?? '—';
-  document.getElementById('s-rejected').textContent = s.rejected ?? '—';
-  document.getElementById('s-escalated').textContent= s.escalated ?? '—';
-  document.getElementById('s-pending').textContent  = s.pending ?? '—';
-  document.getElementById('s-risk').textContent     = s.avg_risk_score != null
-    ? (s.avg_risk_score * 100).toFixed(1) + '%' : '—';
-
-  // Status doughnut
-  if (statusChart) {
-    statusChart.data.datasets[0].data = [s.approved || 0, s.rejected || 0, s.escalated || 0];
-    statusChart.update();
-  }
-
-  // Category bar
-  if (categoryChart && s.by_category) {
-    const cats = Object.entries(s.by_category);
-    categoryChart.data.labels = cats.map(([k]) => k);
-    categoryChart.data.datasets[0].data = cats.map(([, v]) => v);
-    categoryChart.update();
-  }
+function renderExpenses(items) {
+  const tbody = document.getElementById('expenses-body');
+  const valid = items.filter(e => e.submitter && e.submitter !== '—' && !isNaN(parseFloat(e.amount)));
+  if (!valid.length) { tbody.innerHTML = '<tr class="empty"><td colspan="6">No expenses yet</td></tr>'; return; }
+  tbody.innerHTML = valid.slice(0,20).map(e => `
+    <tr>
+      <td>${e.submitter||'—'}</td><td>${fmt$(e.amount)}</td><td>${e.category||'—'}</td>
+      <td>${riskBar(e.risk_score)}</td><td>${pill(e.status)}</td>
+      <td style="color:var(--muted);font-size:12px">${fmtDate(e.created_at||e.timestamp)}</td>
+    </tr>`).join('');
 }
 
-// ── Master refresh ─────────────────────────────────────────────────────────
 async function refresh() {
   try {
-    const [statsRes, expensesRes, pendingRes] = await Promise.all([
-      fetch('/api/stats'),
-      fetch('/api/expenses'),
-      fetch('/api/pending'),
-    ]);
-    const [stats, expenses, pending] = await Promise.all([
-      statsRes.json(), expensesRes.json(), pendingRes.json(),
-    ]);
-    updateStats(stats);
-    renderExpenses(expenses);
-    renderPending(pending);
-  } catch (err) {
-    console.error('Refresh failed:', err);
-  }
+    const [s, e, p] = await Promise.all([fetch('/api/stats'), fetch('/api/expenses'), fetch('/api/pending')]);
+    const [stats, expenses, pending] = await Promise.all([s.json(), e.json(), p.json()]);
+
+    // KPIs — exclude rejected/NaN from amount display
+    const validAmount = Array.isArray(expenses)
+      ? expenses.filter(e => e.status !== 'REJECTED' && !isNaN(parseFloat(e.amount))).reduce((s,e) => s + parseFloat(e.amount||0), 0)
+      : 0;
+
+    document.getElementById('k-total').textContent = stats.total_expenses ?? '—';
+    document.getElementById('k-amount').textContent = fmt$(validAmount);
+    document.getElementById('k-approved').textContent = stats.approved ?? '—';
+    document.getElementById('k-rejected').textContent = stats.rejected ?? '—';
+    document.getElementById('k-escalated').textContent = stats.escalated ?? '—';
+    document.getElementById('k-pending').textContent = stats.pending ?? '—';
+    document.getElementById('k-risk').textContent = stats.avg_risk_score != null ? (stats.avg_risk_score*100).toFixed(1)+'%' : '—';
+    document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+
+    statusChart.data.datasets[0].data = [stats.approved||0, stats.rejected||0, stats.escalated||0];
+    statusChart.update();
+
+    if (stats.by_category) {
+      const cats = Object.entries(stats.by_category);
+      categoryChart.data.labels = cats.map(([k])=>k);
+      categoryChart.data.datasets[0].data = cats.map(([,v])=>v);
+      categoryChart.update();
+    }
+
+    renderExpenses(Array.isArray(expenses) ? expenses : []);
+    renderPending(Array.isArray(pending) ? pending : []);
+  } catch(err) { console.error('Refresh failed:', err); }
 }
 
-// ── Boot ───────────────────────────────────────────────────────────────────
 initCharts();
 refresh();
-setInterval(refresh, 10_000);  // auto-refresh every 10 s
+setInterval(refresh, 10000);
 </script>
 </body>
 </html>
