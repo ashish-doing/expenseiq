@@ -29,6 +29,14 @@
 
 ---
 
+## 🌐 Live Demo
+
+**Dashboard:** https://expenseiq-slnf.onrender.com/dashboard  
+**API Docs:** https://expenseiq-slnf.onrender.com/docs  
+**Landing Page:** https://ashish-doing.github.io/expenseiq
+
+> ⚠️ Hosted on Render free tier — first load may take ~30s if instance is sleeping.
+
 ## 🎬 Demo Video
 
 > *(Coming soon — submission deadline July 6, 2026)*
@@ -266,7 +274,7 @@ POST /apps/expense_agent/trigger/pubsub → Pub/Sub compatible trigger
 | **MCP Server** | `expense_agent/tools.py` | `lookup_expense_policy` tool backed by Google Developer Knowledge MCP |
 | **Antigravity** | Video | Used to scaffold, lint, and build the project throughout development |
 | **Security features** | `expense_agent/security.py` + agent.py | PII redaction, injection detection, risk scoring, Safety Gate routing |
-| **Deployability** | This README | `uv sync` + `uv run adk web` + `uvicorn` — full local setup in 3 commands |
+| **Deployability** | README + Render | Live at https://expenseiq-slnf.onrender.com · local: `uv sync` → `uvicorn` |
 | **Agent skills** | `.agents/skills/expense-validator/` | Level 4 deterministic skill: Python script validates fields, exit code = pass/fail |
 
 ---
