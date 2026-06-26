@@ -1,7 +1,25 @@
 """
-ADK tools for ExpenseIQ agent.
-MCP-backed policy lookup via Google Developer Knowledge.
+ExpenseIQ ADK Tools
+===================
+lookup_expense_policy — MCP-pattern policy lookup tool.
+check_review_quality  — LoopAgent escalation signal tool.
+ 
+MCP Integration boundary
+------------------------
+`lookup_expense_policy` is an MCP-compatible tool that follows the Model Context
+Protocol tool-call contract: it accepts a natural-language question and returns
+authoritative policy text.  The LLMReviewer sub-agent calls it on EVERY review
+so the tool call is always visible in agent traces.
+ 
+Current implementation: deterministic local knowledge base (no external network
+call) so the demo works without credentials and is fully reproducible.
+ 
+Production roadmap: swap the function body for a single MCP client call to the
+Google Developer Knowledge MCP server (`@google/developer-knowledge`).  The tool
+signature, agent instruction, and call site in LLMReviewer are unchanged — only
+the data source switches.  This is the clean MCP integration point.
 """
+
 from google.adk.tools.tool_context import ToolContext
 
 

@@ -39,7 +39,7 @@
 
 ## 🎬 Demo Video
 
-> *(Coming soon — submission deadline July 6, 2026)*
+> 📹 **Video coming — uploading before July 6 deadline. See architecture walkthrough below.**
 
 ---
 
@@ -271,7 +271,7 @@ POST /apps/expense_agent/trigger/pubsub → Pub/Sub compatible trigger
 | Concept | Where | What |
 |---|---|---|
 | **Agent / Multi-agent (ADK)** | `expense_agent/agent.py` | ADK 2.0 `Workflow` graph + `LoopAgent` with 2 `LlmAgent` sub-agents |
-| **MCP Server** | `expense_agent/tools.py` | `lookup_expense_policy` tool backed by Google Developer Knowledge MCP |
+| **MCP Server** | `expense_agent/tools.py` | `lookup_expense_policy` tool — called by LLMReviewer on every review; local policy KB with clean MCP integration point (live server in roadmap) |
 | **Antigravity** | Video | Used to scaffold, lint, and build the project throughout development |
 | **Security features** | `expense_agent/security.py` + agent.py | PII redaction, injection detection, risk scoring, Safety Gate routing |
 | **Deployability** | README + Render | Live at https://expenseiq-slnf.onrender.com · local: `uv sync` → `uvicorn` |
@@ -435,7 +435,7 @@ expenseiq/
 ├── app/
 │   └── __init__.py       # ADK app entry point
 ├── dashboard/
-│   ├── store.py          # In-memory expense store + get_stats() + seed data
+│   ├── store.py          # SQLite-backed expense store + get_stats() + seed data
 │   ├── api.py            # FastAPI router — /api/stats, /api/expenses
 │   └── static/
 │       └── index.html    # Chart.js CRM dashboard — 3 charts + expense table
@@ -476,6 +476,32 @@ expenseiq/
 | Dev tooling | Antigravity CLI (agy) | Scaffolding + linting + development |
 | Package manager | uv | Fast Python dependency management |
 | Static analysis | Semgrep | Hardcoded secret detection |
+
+---
+
+## ⚠️ Limitations & Roadmap
+
+### Current Limitations
+
+| Limitation | Detail |
+|---|---|
+| **SQLite on Render free tier** | Database file lives on ephemeral disk — resets on new deploy. For production, swap `DB_PATH` to a mounted volume or Postgres. Seed data repopulates automatically so the dashboard is never empty. |
+| **Single currency** | All amounts treated as USD. Multi-currency support (FX conversion + per-currency thresholds) is in the roadmap. |
+| **No RBAC** | Any authenticated user can approve/reject via the dashboard. Production would layer role checks (manager vs. finance vs. auditor) on the HITL endpoints. |
+| **MCP policy lookup is deterministic** | `lookup_expense_policy` returns policy rules from a local knowledge base. The production roadmap wires this to a live Google Developer Knowledge MCP server for real-time policy updates. The tool call is visible in agent traces — the integration point is clean. |
+| **LoopAgent deprecation warning** | ADK 2.0 logs a `DeprecationWarning` for `LoopAgent` on import; the preferred ADK pattern is a Workflow cycle edge. `LoopAgent` is fully functional and used here intentionally to match the Capstone course's demonstrated pattern. Migration to cycle edges is a P1 roadmap item. |
+| **HITL is dashboard-native, not ADK-native** | Human approval uses FastAPI endpoints + dashboard buttons rather than ADK's `RequestInput`/`ResumabilityConfig`. This is a deliberate trade-off: the dashboard UI is richer and demoing HITL is clearer visually. ADK-native resumability is in the roadmap. |
+| **Single-agent pipeline** | No agent-to-agent communication. A planned v2 adds a PolicyAgent (live MCP queries) and BudgetAgent (tracks spend-by-department) as peer agents in a multi-agent graph. |
+
+### Roadmap
+
+- [ ] **Multi-agent v2** — PolicyAgent + BudgetAgent as peer ADK agents
+- [ ] **Live MCP** — wire `lookup_expense_policy` to Google Developer Knowledge MCP server
+- [ ] **ADK-native HITL** — migrate to `RequestInput` + `ResumabilityConfig`
+- [ ] **Postgres persistence** — swap SQLite for managed Postgres on Render
+- [ ] **RBAC** — role-gated approval (manager / finance / auditor)
+- [ ] **Multi-currency** — FX conversion + per-currency thresholds
+- [ ] **Workflow cycle** — migrate LoopAgent to ADK 2.0 cycle edge pattern
 
 ---
 

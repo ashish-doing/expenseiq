@@ -5,6 +5,8 @@ Exposes ADK agent via REST + serves CRM dashboard.
 import json
 import logging
 import os
+import uuid
+from datetime import datetime
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -63,8 +65,8 @@ async def root():
 @fastapi_app.post("/apps/expense_agent/trigger")
 async def trigger_expense(request: Request):
     """Submit an expense for agent processing."""
-    import uuid
-    from dashboard.store import PENDING_APPROVALS
+    
+    from dashboard.store import add_pending
     
     body = await request.json()
     user_id = body.get("submitter", "default-user").replace("@", "_").replace(".", "_")
@@ -74,7 +76,7 @@ async def trigger_expense(request: Request):
         user_id=user_id,
     )
 
-    events = []
+    
     final_outcome = None
 
     async for event in runner.run_async(
@@ -85,38 +87,38 @@ async def trigger_expense(request: Request):
             parts=[genai_types.Part.from_text(text=json.dumps(body))]
         ),
     ):
-        events.append(str(event.author) if hasattr(event, 'author') else str(event))
+        
         if hasattr(event, 'output') and event.output:
             if isinstance(event.output, dict) and event.output.get("status"):
                 final_outcome = event.output
 
     # Route ESCALATED expenses to PENDING_APPROVALS for human review
     if final_outcome and final_outcome.get("status") == "ESCALATED":
-        expense_id = str(uuid.uuid4())
+        expense_id = final_outcome.get("expense_id") or str(uuid.uuid4())
         pending_record = {
-            "expense_id": expense_id,
-            "submitter": body.get("submitter", "unknown"),
-            "amount": body.get("amount", 0),
-            "category": body.get("category", "unknown"),
-            "description": body.get("description", ""),
-            "risk_score": final_outcome.get("risk_score", 0),
+            "expense_id":    expense_id,
+            "submitter":     body.get("submitter", "unknown"),
+            "amount":        body.get("amount", 0),
+            "category":      body.get("category", "unknown"),
+            "description":   body.get("description", ""),
+            "risk_score":    final_outcome.get("risk_score", 0),
             "security_alert": final_outcome.get("security_alert", False),
-            "status": "ESCALATED",
-            "created_at": __import__('datetime').datetime.utcnow().isoformat(),
-            "reason": final_outcome.get("reason", ""),
+            "status":        "ESCALATED",
+            "reason":        final_outcome.get("reason", ""),
+            "created_at":    datetime.utcnow().isoformat(),
         }
-        PENDING_APPROVALS.append(pending_record)
+        add_pending(pending_record)
         return JSONResponse({
-            "status": "escalated",
+            "status":     "escalated",
             "expense_id": expense_id,
-            "outcome": final_outcome,
-            "message": "Expense flagged for human review",
+            "outcome":    final_outcome,
+            "message":    "Expense flagged for human review. Visit /dashboard to approve or reject.",
         })
 
     return JSONResponse({
         "status": "processed",
         "outcome": final_outcome,
-        "events_count": len(events),
+        
     })
 
 
