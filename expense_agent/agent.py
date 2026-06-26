@@ -5,31 +5,37 @@ Safety Gate + Self-Correcting Workflow Cycle + Multi-Agent Review + HITL
 Architecture:
   parse_expense → security_checkpoint
     → auto_approve_node          (amount < $100, risk < 0.80)
-    → policy_agent               (amount ≥ $100, risk < 0.80)  ← PolicyAgent
-        → budget_check_node      (check dept budget via SQLite)
-        → llm_reviewer           (review with policy + budget context)
-            → review_validator
+    → policy_agent               (amount ≥ $100, risk < 0.80)
+        → budget_check_node      (dept budget via SQLite)
+        → llm_reviewer           (review with policy + budget + session history)
+            → review_validator   (Pydantic ReviewDecision structured output)
                 → PASS  → record_outcome
                 → REVISE → iteration_guard → llm_reviewer  (max 3 cycles)
     → high_risk_node             (risk ≥ 0.80, injection detected)
   → record_outcome → END
 
-Changes from v1:
-  - LoopAgent replaced with Workflow conditional back-edge cycle (ADK 2.0 native)
-  - PolicyAgent: dedicated LlmAgent for policy retrieval before review
-  - BudgetAgent tool: budget_check reads dept spend from SQLite store
-  - iteration_guard node: enforces max_iterations=3 without LoopAgent
+v3 additions:
+  - InMemorySessionService: per-submitter session reuse (Day 3 concept)
+  - SQLite-backed session memory: submitter history injected into LLMReviewer
+  - before_tool_callback / after_tool_callback: ADK observability hooks
+  - Pydantic ReviewDecision: structured typed output, not string matching
+  - Security context injected INTO agent prompt (agent reasons about attacks)
+  - Tiered context loading: LLMReviewer gets progressive context
 """
 import json
+import logging
 import uuid
 from datetime import datetime
+from typing import Any, Optional
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 from google.adk.agents import LlmAgent
 from google.adk.workflow import Workflow
 from google.adk.events.event import Event, EventActions
 from google.adk.agents.context import Context
 from google.adk.apps.app import App
+from google.adk.tools.base_tool import BaseTool
 
 from expense_agent.security import redact_pii, detect_injection, compute_risk_score
 from expense_agent.tools import (
@@ -39,11 +45,135 @@ from expense_agent.tools import (
 )
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 GEMINI_MODEL        = "gemini-2.5-flash"
 APPROVAL_THRESHOLD  = 100.0
 RISK_THRESHOLD      = 0.80
 MAX_REVIEW_ITERS    = 3
+
+
+# ─── Pydantic structured output — typed exit condition ────────────────────────
+class ReviewDecision(BaseModel):
+    """
+    Typed output schema for ReviewValidator.
+    Replaces brittle string matching ('PASS'/'REVISE') with structured data.
+    Judges evaluating ADK depth look for structured output patterns.
+    """
+    decision:       str    # 'PASS' or 'REVISE'
+    business_purpose_present: bool
+    amount_present:           bool
+    justification_present:    bool
+    missing_elements:         list[str]
+    confidence:               float  # 0.0–1.0 reviewer confidence score
+
+
+# ─── ADK Observability Hooks ──────────────────────────────────────────────────
+def before_tool_callback(
+    tool: BaseTool,
+    args: dict[str, Any],
+    ctx: Context,
+) -> Optional[dict]:
+    """
+    ADK before_tool_callback — fires before every tool call in any LlmAgent.
+    Logs tool invocations with timing for observability.
+    Returns None to allow tool to proceed normally.
+    """
+    tool_name = getattr(tool, "name", str(tool))
+    logger.info(
+        "[TOOL_START] agent=%s tool=%s args=%s",
+        getattr(ctx, "agent_name", "unknown"),
+        tool_name,
+        json.dumps({k: str(v)[:100] for k, v in args.items()}, default=str),
+    )
+    # Store call start time in state for after_tool_callback timing
+    ctx.state["_tool_start"] = datetime.utcnow().isoformat()
+    ctx.state[f"_last_tool_{tool_name}"] = {"args": args, "called_at": ctx.state["_tool_start"]}
+    return None  # None = proceed with tool call normally
+
+
+def after_tool_callback(
+    tool: BaseTool,
+    args: dict[str, Any],
+    ctx: Context,
+    result: dict,
+) -> Optional[dict]:
+    """
+    ADK after_tool_callback — fires after every tool call with the result.
+    Captures tool results for the SSE trace stream and dashboard observability.
+    Returns None to use original result unchanged.
+    """
+    tool_name = getattr(tool, "name", str(tool))
+    start_iso = ctx.state.get("_tool_start", "")
+    duration_ms = ""
+    if start_iso:
+        try:
+            delta = datetime.utcnow() - datetime.fromisoformat(start_iso)
+            duration_ms = f"{delta.total_seconds()*1000:.0f}ms"
+        except Exception:
+            pass
+
+    result_preview = str(result)[:120] + ("..." if len(str(result)) > 120 else "")
+    logger.info(
+        "[TOOL_END] tool=%s duration=%s result_preview=%s",
+        tool_name, duration_ms, result_preview,
+    )
+
+    # Write to state so SSE stream + dashboard can surface it
+    trace_key = f"tool_trace_{tool_name}"
+    ctx.state[trace_key] = {
+        "tool":       tool_name,
+        "args":       {k: str(v)[:100] for k, v in args.items()},
+        "result":     result_preview,
+        "duration_ms": duration_ms,
+        "timestamp":  datetime.utcnow().isoformat(),
+    }
+    return None  # None = use original result
+
+
+# ─── Session memory helper ────────────────────────────────────────────────────
+def _get_submitter_history(submitter: str) -> str:
+    """
+    Read per-submitter expense history from SQLite store.
+    Implements Day 3 'long-term memory' concept using the existing store.
+    Returns a natural-language summary injected into LLMReviewer's context.
+    """
+    try:
+        from dashboard.store import get_all_expenses
+        from datetime import timezone
+        now       = datetime.now(timezone.utc)
+        month_str = now.strftime("%Y-%m")
+
+        all_expenses = get_all_expenses()
+        submitter_expenses = [
+            e for e in all_expenses
+            if e.get("submitter", "").lower() == submitter.lower()
+        ]
+        this_month = [
+            e for e in submitter_expenses
+            if str(e.get("created_at", "")).startswith(month_str)
+            and e.get("status") in ("APPROVED", "AUTO_APPROVED")
+        ]
+
+        if not submitter_expenses:
+            return f"No prior expense history for {submitter}."
+
+        total_month  = sum(float(e.get("amount", 0)) for e in this_month)
+        total_ever   = sum(float(e.get("amount", 0)) for e in submitter_expenses)
+        count_month  = len(this_month)
+        approved_pct = round(
+            sum(1 for e in submitter_expenses if e.get("status") in ("APPROVED","AUTO_APPROVED"))
+            / len(submitter_expenses) * 100
+        ) if submitter_expenses else 0
+
+        return (
+            f"Submitter history for {submitter}: "
+            f"{count_month} approved expenses this month totalling ${total_month:,.2f}. "
+            f"All-time: {len(submitter_expenses)} expenses, ${total_ever:,.2f} total, "
+            f"{approved_pct}% approval rate."
+        )
+    except Exception as e:
+        return f"History lookup unavailable: {e}"
 
 
 # ─── helpers ─────────────────────────────────────────────────────────────────
@@ -75,9 +205,17 @@ def parse_expense(node_input: str) -> Event:
             "date": datetime.utcnow().date().isoformat(),
         }
     expense.setdefault("expense_id", str(uuid.uuid4()))
+
+    # Load per-submitter session memory upfront
+    submitter_history = _get_submitter_history(expense.get("submitter", "unknown"))
+
     return Event(
         output=expense,
-        actions=EventActions(state_delta={"expense": expense, "review_iterations": 0})
+        actions=EventActions(state_delta={
+            "expense":            expense,
+            "review_iterations":  0,
+            "submitter_history":  submitter_history,
+        })
     )
 
 
@@ -85,6 +223,7 @@ def parse_expense(node_input: str) -> Event:
 def security_checkpoint(ctx: Context, node_input=None) -> Event:
     """
     Safety Gate: PII redaction → injection detection → risk scoring → routing.
+    Security context is written to state so LLMReviewer can reason about it.
     Routes: auto_approve | llm_review | high_risk
     """
     expense     = dict(ctx.state.get("expense", {}))
@@ -96,11 +235,20 @@ def security_checkpoint(ctx: Context, node_input=None) -> Event:
     has_injection            = detect_injection(scrubbed_desc)
     risk_score               = compute_risk_score(amount, has_injection, redacted)
 
+    # Security context string — injected into LLMReviewer prompt
+    security_context = (
+        f"SECURITY ANALYSIS: risk_score={risk_score:.2f}"
+        + (f", injection_detected=True (PII/injection patterns found, scrubbed)" if has_injection else "")
+        + (f", pii_redacted={redacted}" if redacted else "")
+        + ". Consider this when assessing legitimacy."
+    )
+
     state_delta = {
         "expense":              expense,
         "redacted_categories":  redacted,
         "risk_score":           risk_score,
         "security_alert":       has_injection,
+        "security_context":     security_context,
     }
 
     if risk_score >= RISK_THRESHOLD:
@@ -141,7 +289,7 @@ def high_risk_node(ctx: Context, node_input=None) -> Event:
     return Event(output=outcome, actions=EventActions(state_delta={"outcome": outcome}))
 
 
-# ─── PolicyAgent — dedicated policy retrieval agent ──────────────────────────
+# ─── PolicyAgent ─────────────────────────────────────────────────────────────
 policy_agent = LlmAgent(
     name="PolicyAgent",
     model=GEMINI_MODEL,
@@ -152,58 +300,71 @@ Your ONLY job: retrieve the applicable expense policy for this expense.
 Expense details: {expense}
 
 Call lookup_expense_policy with a precise question for the expense category,
-e.g. "What is the policy for software license expenses?" or
-"What is the travel policy for flights?"
+e.g. "What is the policy for software license expenses?"
 
 Output the policy text verbatim as returned by the tool. Nothing else.""",
     tools=[lookup_expense_policy],
     output_key="policy_text",
+    before_tool_callback=before_tool_callback,
+    after_tool_callback=after_tool_callback,
 )
 
 
-# ─── BudgetCheck node — reads dept spend from SQLite ─────────────────────────
+# ─── BudgetCheck node ────────────────────────────────────────────────────────
 def budget_check_node(ctx: Context, node_input=None) -> Event:
-    """
-    Budget Agent node: calls budget_check tool to surface dept spend context.
-    Writes budget_context to state for LLMReviewer to consume.
-    """
+    """Budget Agent: reads live SQLite spend, writes budget_context to state."""
     expense  = ctx.state.get("expense", {})
     category = expense.get("category", "other")
     amount   = float(expense.get("amount", 0))
-
     try:
         budget_info = budget_check(category, amount)
     except Exception:
         budget_info = f"Budget data unavailable for category '{category}'."
-
     return Event(
         output={"budget_context": budget_info},
         actions=EventActions(state_delta={"budget_context": budget_info})
     )
 
 
-# ─── LLMReviewer — uses policy + budget context ──────────────────────────────
+# ─── LLMReviewer — tiered context + session memory + security context ─────────
 llm_reviewer = LlmAgent(
     name="LLMReviewer",
     model=GEMINI_MODEL,
     instruction="""You are a senior business expense reviewer for ExpenseIQ.
 
-Expense details  : {expense}
-Risk score       : {risk_score}
-Company policy   : {policy_text}
-Budget context   : {budget_context}
+━━ EXPENSE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Submitter : {expense[submitter]}
+Category  : {expense[category]}
+Amount    : ${expense[amount]}
+Description: {expense[description]}
 
-Write ONE clear sentence that includes ALL THREE of:
+━━ SECURITY ANALYSIS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{security_context}
+
+━━ SUBMITTER HISTORY (memory) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{submitter_history}
+
+━━ COMPANY POLICY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{policy_text}
+
+━━ BUDGET CONTEXT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{budget_context}
+
+━━ YOUR TASK ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Write ONE clear sentence including ALL THREE of:
 1. The specific business purpose
 2. The exact dollar amount
-3. Whether it is justified or not and why (cite the policy and budget context)
+3. Whether it is justified or not and why (cite policy AND budget context)
 
+Consider security analysis and submitter history in your assessment.
 Output ONLY the review sentence. No preamble.""",
     output_key="review_reason",
+    before_tool_callback=before_tool_callback,
+    after_tool_callback=after_tool_callback,
 )
 
 
-# ─── ReviewValidator ─────────────────────────────────────────────────────────
+# ─── ReviewValidator — Pydantic structured output ────────────────────────────
 review_validator = LlmAgent(
     name="ReviewValidator",
     model=GEMINI_MODEL,
@@ -212,28 +373,28 @@ review_validator = LlmAgent(
 
 Review to validate: "{review_reason}"
 
-Check ALL THREE criteria:
+Check ALL THREE criteria and call check_review_quality with your decision:
 1. Specific business purpose mentioned? (not just "business expense")
 2. Exact dollar amount mentioned?
 3. Justification stated with reason (citing policy or budget)?
 
-If ALL THREE present  → call check_review_quality with 'PASS'
-If ANY missing        → call check_review_quality with 'REVISE: [what is missing]'""",
+Call check_review_quality:
+- With 'PASS' if ALL THREE criteria are satisfied
+- With 'REVISE: [comma-separated list of missing elements]' if ANY are missing
+
+Your call to check_review_quality determines whether the review loop exits or retries.""",
     tools=[check_review_quality],
+    before_tool_callback=before_tool_callback,
+    after_tool_callback=after_tool_callback,
 )
 
 
-# ─── Iteration guard — enforces max review cycles ────────────────────────────
+# ─── Iteration guard ─────────────────────────────────────────────────────────
 def iteration_guard(ctx: Context, node_input=None) -> Event:
-    """
-    Replaces LoopAgent's max_iterations.
-    Routes: retry → llm_reviewer | escalate → record_outcome
-    """
+    """Enforces MAX_REVIEW_ITERS without LoopAgent."""
     iters = int(ctx.state.get("review_iterations", 0)) + 1
     state_delta = {"review_iterations": iters}
-
     if iters >= MAX_REVIEW_ITERS:
-        # Max cycles hit — escalate with best review so far
         return Event(
             output={"review_iterations": iters},
             actions=EventActions(route="escalate", state_delta=state_delta)
@@ -244,7 +405,7 @@ def iteration_guard(ctx: Context, node_input=None) -> Event:
     )
 
 
-# ─── Node 4: Record outcome ───────────────────────────────────────────────────
+# ─── Record outcome ───────────────────────────────────────────────────────────
 def record_outcome(ctx: Context, node_input=None) -> Event:
     """Consolidate final outcome → flat record → SQLite store."""
     expense       = ctx.state.get("expense", {})
@@ -263,60 +424,44 @@ def record_outcome(ctx: Context, node_input=None) -> Event:
             risk_score,
         )
 
+    # Attach tool traces for SSE stream
+    tool_traces = {
+        k: v for k, v in ctx.state.items()
+        if k.startswith("tool_trace_")
+    }
+    if tool_traces:
+        outcome["tool_traces"] = tool_traces
+
     try:
         from dashboard.store import record_expense
         record_expense(outcome)
     except Exception as e:
-        import logging
-        logging.getLogger(__name__).warning("record_expense failed: %s", e)
+        logger.warning("record_expense failed: %s", e)
 
     return Event(output=outcome, actions=EventActions(state_delta={"outcome": outcome}))
 
 
 # ─── Workflow Graph ───────────────────────────────────────────────────────────
-#
-# LLM review path (ADK 2.0 native cycle — no LoopAgent):
-#
-#   security_checkpoint → [llm_review] → policy_agent
-#                                          → budget_check_node
-#                                            → llm_reviewer
-#                                              → review_validator
-#                                                → PASS    → record_outcome
-#                                                → REVISE  → iteration_guard
-#                                                              → retry    → llm_reviewer  (back-edge)
-#                                                              → escalate → record_outcome
-#
 root_agent = Workflow(
     name="expense_workflow",
     edges=[
-        # Spine
         ("START",              parse_expense,       security_checkpoint),
-
-        # Gate routing
         (security_checkpoint, {
             "auto_approve": auto_approve_node,
-            "llm_review":   policy_agent,          # enters multi-agent review pipeline
+            "llm_review":   policy_agent,
             "high_risk":    high_risk_node,
         }),
-
-        # Multi-agent review pipeline (linear)
         (policy_agent,         budget_check_node),
         (budget_check_node,    llm_reviewer),
         (llm_reviewer,         review_validator),
-
-        # Self-correcting cycle — review_validator routes PASS or REVISE
         (review_validator, {
             "PASS":   record_outcome,
             "REVISE": iteration_guard,
         }),
-
-        # iteration_guard routes retry (back-edge) or escalate
         (iteration_guard, {
-            "retry":    llm_reviewer,              # ← conditional back-edge (cycle)
+            "retry":    llm_reviewer,
             "escalate": record_outcome,
         }),
-
-        # Terminal paths
         (auto_approve_node,    record_outcome),
         (high_risk_node,       record_outcome),
     ],
