@@ -186,7 +186,7 @@
     <div class="stat"><div class="stat-val green">96ms</div><div class="stat-label">Auto-approve latency</div></div>
     <div class="stat"><div class="stat-val red">0</div><div class="stat-label">LLM calls on injection</div></div>
     <div class="stat"><div class="stat-val blue">3</div><div class="stat-label">Review loop max iterations</div></div>
-    <div class="stat"><div class="stat-val green">10/10</div><div class="stat-label">Tests passing</div></div>
+    <div class="stat"><div class="stat-val green">22/22</div><div class="stat-label">Tests passing</div></div>
   </div>
 </div>
 
@@ -209,7 +209,7 @@
     <div class="path-card blue">
       <div class="path-emoji">🔄</div>
       <h3>Self-Correcting Review</h3>
-      <p>Amount ≥ $100, clean input. A LoopAgent runs LLMReviewer → ReviewValidator in a loop. The review must cite business purpose, exact amount, and justification before it counts.</p>
+      <p>Amount ≥ $100, clean input. A Workflow cycle runs PolicyAgent → BudgetCheck → LLMReviewer → ReviewValidator. The review must cite business purpose, exact amount, and justification before it counts.</p>
       <div class="path-meta">
         <span class="tag blue">2-6 LLM calls</span>
         <span class="tag blue">max 3 iterations</span>
@@ -262,7 +262,7 @@
 <section id="architecture">
   <div class="section-label">Architecture</div>
   <h2>ADK 2.0 <em>Workflow Graph</em></h2>
-  <p class="section-sub">Five nodes, one LoopAgent, three routing paths — all wired with conditional edges in Google ADK 2.0.</p>
+  <p class="section-sub">Multi-agent pipeline: PolicyAgent, BudgetAgent, LLMReviewer, ReviewValidator — all wired with conditional edges in Google ADK 2.0.</p>
   <div class="flow-visual">
     <div class="flow-row">
       <div class="flow-node start">START</div>
@@ -279,7 +279,7 @@
       </div>
       <div class="flow-branch">
         <div class="flow-branch-label blue">llm_review</div>
-        <div class="flow-node blue-node">ReviewLoop<div class="flow-sublabel">LoopAgent · max 3 iter</div></div>
+        <div class="flow-node blue-node">ReviewLoop<div class="flow-sublabel">Workflow cycle · max 3 iter</div></div>
       </div>
       <div class="flow-branch">
         <div class="flow-branch-label red">high_risk</div>
@@ -312,12 +312,12 @@
       <tr>
         <td><span class="check">✅</span> Agent / Multi-agent (ADK)</td>
         <td><code>expense_agent/agent.py</code></td>
-        <td>ADK 2.0 Workflow graph + LoopAgent with 2 LlmAgent sub-agents</td>
+        <td>ADK 2.0 Workflow graph + 4 LlmAgents: PolicyAgent, LLMReviewer, ReviewValidator + BudgetCheck node</td>
       </tr>
       <tr>
         <td><span class="check">✅</span> MCP Server</td>
         <td><code>expense_agent/tools.py</code></td>
-        <td>Google Developer Knowledge MCP for real-time policy lookup</td>
+        <td>Local policy knowledge base — clean MCP integration point (live server in roadmap)</td>
       </tr>
       <tr>
         <td><span class="check">✅</span> Antigravity</td>
@@ -366,7 +366,7 @@
     </div>
     <div class="result-card">
       <div class="r-label">Test suite</div>
-      <div class="r-val" style="color:var(--accent2)">10/10</div>
+      <div class="r-val" style="color:var(--accent2)">22/22</div>
       <div class="r-sub">Outcome-based tests · 0.06s · all green</div>
     </div>
   </div>
@@ -400,13 +400,13 @@
   <h2>Built with the <em>right tools.</em></h2>
   <p class="section-sub">Every component chosen for the course requirements and production-grade design.</p>
   <div class="stack-grid">
-    <div class="stack-card"><div class="icon">🤖</div><h4>Google ADK 2.0</h4><p>Workflow graph, LoopAgent, LlmAgent, App — the core agent framework</p></div>
+    <div class="stack-card"><div class="icon">🤖</div><h4>Google ADK 2.0</h4><p>Workflow graph, LlmAgent, tool callbacks, per-submitter sessions — ADK 2.0</p></div>
     <div class="stack-card"><div class="icon">✨</div><h4>Gemini 2.5 Flash</h4><p>LLM reviewer and validator inside the Self-Correcting ReviewLoop</p></div>
     <div class="stack-card"><div class="icon">🔌</div><h4>MCP Server</h4><p>Google Developer Knowledge for real-time expense policy grounding</p></div>
     <div class="stack-card"><div class="icon">🛡️</div><h4>Security Module</h4><p>PII redaction + injection detection + numeric risk scoring in pure Python</p></div>
     <div class="stack-card"><div class="icon">⚡</div><h4>FastAPI + uvicorn</h4><p>Agent trigger API + dashboard serving + Pub/Sub compatible endpoint</p></div>
     <div class="stack-card"><div class="icon">📊</div><h4>Chart.js 4.4.1</h4><p>Live CRM dashboard — donut, bar, doughnut charts, auto-refresh 10s</p></div>
-    <div class="stack-card"><div class="icon">🧪</div><h4>pytest</h4><p>10 outcome-based tests — security, validation, store — 0.06s</p></div>
+    <div class="stack-card"><div class="icon">🧪</div><h4>pytest</h4><p>22 outcome-based tests — security, store, RBAC, tools, HITL</p></div>
     <div class="stack-card"><div class="icon">🔍</div><h4>Semgrep</h4><p>Custom rule catches hardcoded API keys (AIzaSy prefix) pre-commit</p></div>
     <div class="stack-card"><div class="icon">🪄</div><h4>Antigravity CLI</h4><p>Used for scaffolding, agents-cli lint, and development throughout</p></div>
     <div class="stack-card"><div class="icon">📦</div><h4>uv</h4><p>Fast Python dependency management — `uv sync` installs everything</p></div>

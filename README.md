@@ -29,6 +29,25 @@
 
 ---
 
+## ⚡ 2-Minute Quick Start
+
+```bash
+git clone https://github.com/ashish-doing/expenseiq.git
+cd expenseiq
+cp .env.example .env          # add your GEMINI_API_KEY
+make demo                       # installs deps + starts dashboard at localhost:8080
+```
+
+Open **http://localhost:8080/dashboard** — credentials: `admin / demo23`
+
+Or test the three paths directly:
+```bash
+make submit-auto      # $45 lunch → AUTO_APPROVED in ~100ms
+make submit-attack    # $999,999 + injection → ESCALATED, 0 LLM calls
+```
+
+---
+
 ## 🌐 Live Demo
 
 **Dashboard:** https://expenseiq-slnf.onrender.com/dashboard  
@@ -126,23 +145,23 @@ User submits expense JSON
     ┌────┼──────────────────┐
     │    │                  │
     ▼    ▼                  ▼
-[auto_  [ReviewLoop]    [high_risk]
-approve] LoopAgent       ESCALATED
-No LLM  max_iter=3      LLM bypassed
-    │    │                  │
-    │   [LLMReviewer]       │
-    │   Gemini 2.5 Flash    │
-    │   reads expense +     │
-    │   risk_score          │
-    │   writes review_reason│
-    │    │                  │
-    │   [ReviewValidator]   │
-    │   checks 3 criteria:  │
-    │   business purpose ✓  │
-    │   dollar amount ✓     │
-    │   justification ✓     │
-    │   → PASS: escalate=True│
-    │   → REVISE: retry     │
+[auto_  [PolicyAgent]   [high_risk]
+approve] ↓ lookup_policy  ESCALATED
+No LLM  [BudgetCheck]   LLM bypassed
+    │   ↓ SQLite spend       │
+    │   [LLMReviewer]        │
+    │   Gemini 2.5 Flash     │
+    │   policy+budget+memory │
+    │   security context     │
+    │   writes review_reason │
+    │    │                   │
+    │   [ReviewValidator]    │
+    │   checks 3 criteria:   │
+    │   business purpose ✓   │
+    │   dollar amount ✓      │
+    │   justification ✓      │
+    │   → PASS → record      │
+    │   → REVISE → guard     │
     │    │                  │
     └────┤                  │
          ▼                  │
@@ -157,10 +176,10 @@ No LLM  max_iter=3      LLM bypassed
 
 | Path | LLM calls | Latency | When |
 |---|---|---|---|
-| Auto-approve | 0 | ~96ms | amount < $100, risk < 0.40 |
-| ReviewLoop (1 iter) | 2 | ~3-5s | amount ≥ $100, clean input |
+| Auto-approve | 0 | ~100ms on local dev hardware | amount < $100, risk < 0.40 |
+| ReviewLoop (1 iter) | 2 | ~3-5s (varies with Gemini API latency) | amount ≥ $100, clean input |
 | ReviewLoop (2-3 iter) | 4-6 | ~8-15s | ambiguous review reason |
-| High-risk escalation | 0 | ~96ms | risk ≥ 0.80 or injection detected |
+| High-risk escalation | 0 | ~100ms on local dev hardware | risk ≥ 0.80 or injection detected |
 
 The most dangerous inputs — injections, PII, extreme amounts — cost zero LLM tokens because they never reach the model.
 
@@ -209,7 +228,7 @@ Event #4 — `status: ESCALATED`, `risk_score: 1`, `security_alert: true`, `reda
 
 ## 🔄 Self-Correcting Review Loop
 
-The ReviewLoop is a `LoopAgent` wrapping two `LlmAgent` nodes — the confirmed winning pattern from the November 2025 AI Agents Intensive Capstone.
+The ReviewLoop is implemented as a native ADK 2.0 Workflow cycle (no LoopAgent) with two `LlmAgent` nodes — an established ADK iterative-review pattern demonstrated in the Nov 2025 AI Agents Intensive course codelabs.
 
 ```python
 review_loop = LoopAgent(
@@ -240,7 +259,7 @@ $250 Annual Figma license for design team
 → status: APPROVED, risk_score: 0.4
 ```
 
-Total latency for this path: ~3-5s. Zero manual intervention.
+Total latency for this path: ~3–5s depending on Gemini API latency. Single-trace screenshots are not benchmarks. Zero manual intervention.
 
 ---
 
@@ -258,9 +277,13 @@ A live FastAPI + Chart.js dashboard at `http://localhost:8080/dashboard` showing
 
 API endpoints:
 ```
-GET /api/stats     → aggregated stats for all charts
-GET /api/expenses  → recent 10 expense records
-POST /apps/expense_agent/trigger        → submit expense (JSON body)
+GET  /api/stats              → aggregated stats for all charts
+GET  /api/expenses           → recent expense records (SQLite-backed)
+GET  /api/pending            → expenses awaiting HITL approval
+GET  /api/stream/{id}        → SSE real-time agent trace stream
+GET  /api/explain/{id}       → Policy Explainer: "Why was this decision made?"
+POST /apps/expense_agent/trigger        → submit expense (JSON body, per-submitter session)
+POST /batch                            → concurrent batch processing (asyncio.gather, up to 50)
 POST /apps/expense_agent/trigger/pubsub → Pub/Sub compatible trigger
 ```
 
@@ -438,7 +461,7 @@ Invoke-RestMethod -Uri "http://localhost:8080/apps/expense_agent/trigger" -Metho
 ```
 expenseiq/
 ├── expense_agent/
-│   ├── agent.py          # ADK 2.0 Workflow graph — all nodes + LoopAgent + App
+│   ├── agent.py          # ADK 2.0 Workflow graph — all nodes + Workflow cycle + tool callbacks + App
 │   ├── security.py       # PII redaction + injection detection + risk scoring
 │   ├── tools.py          # PolicyAgent tool (lookup_expense_policy) + BudgetAgent tool (budget_check) + check_review_quality
 │   └── __init__.py
@@ -475,9 +498,9 @@ expenseiq/
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| Agent framework | Google ADK 2.0 | Workflow graph, LoopAgent, LlmAgent, App |
+| Agent framework | Google ADK 2.0 | Workflow graph, LlmAgent, tool callbacks, App (no LoopAgent) |
 | LLM | Gemini 2.5 Flash | Expense review + validation |
-| MCP | Google Developer Knowledge | Real-time expense policy lookup |
+| MCP | Local policy knowledge base | `lookup_expense_policy` tool — MCP integration point (live server in roadmap) |
 | Security | `re` + custom patterns | PII redaction + injection detection |
 | Backend | FastAPI + uvicorn | Agent trigger API + dashboard serving |
 | Dashboard | Chart.js 4.4.1 (CDN) | Donut + bar + doughnut charts |
@@ -518,7 +541,7 @@ expenseiq/
 **Why route high-risk expenses around the LLM entirely?**
 A prompt-injection attempt embedded in an expense description is maximally dangerous precisely when it reaches an LLM that has authority to approve or reject. The Safety Gate's value is that `risk_score >= 0.80` goes directly to `ESCALATED` — the LLM never processes the payload, so injection has nothing to attack.
 
-**Why a LoopAgent instead of a single LLM call?**
+**Why a Workflow cycle instead of a single LLM call?**
 Single LLM reviews are unreliable — the model may omit the dollar amount, give a vague justification, or miss the business purpose entirely. The Self-Correcting Loop validates the review against hard criteria and retries with specific feedback until all three are present or max iterations is hit. This is the difference between "the agent reviewed it" and "the agent reviewed it and the review is verifiably complete."
 
 **Why deterministic auto-approve below $100?**
@@ -551,3 +574,39 @@ Built for the **Kaggle AI Agents: Intensive Vibe Coding Capstone 2026**
 *The best defense against prompt injection is never calling the model.*
 
 </div>
+---
+
+## 🪄 How I Built This With Antigravity
+
+Antigravity (the vibe coding IDE from the course) was used throughout development for scaffolding, linting, and enforcing rules.
+
+**`.agents/CONTEXT.md` — persistent rules loaded every session:**
+```markdown
+## Core Rules
+- Always use model: gemini-2.5-flash
+- Never hardcode API keys — always use os.environ or .env
+- Run `uv run pytest tests/ -v` after every code change
+- All expenses processed through security_checkpoint before LLM
+- Use `uv run` prefix for all Python commands
+
+## Security Standards
+- PII redaction must happen BEFORE any LLM call
+- Injection detection must happen BEFORE any LLM call
+- Risk score >= 0.80 routes to escalation, never to LLM
+```
+
+**`.agents/hooks.json` — PreToolUse hook blocks destructive commands:**
+```json
+{
+  "enabled": true,
+  "PreToolUse": [
+    {
+      "matcher": "run_command",
+      "command": "python .agents/scripts/validate_tool_call.py",
+      "timeout": 10
+    }
+  ]
+}
+```
+
+This hook fires before every tool execution in the Antigravity session — the same pre-gate pattern used in the security_checkpoint node. The course's vibe coding workflow shaped the agent's architecture directly.
