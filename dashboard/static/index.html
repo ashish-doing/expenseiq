@@ -171,10 +171,16 @@ function showRejectForm(id) {
   f.style.display = f.style.display === 'block' ? 'none' : 'block';
 }
 
+// RBAC: dashboard sends manager role header — production would derive from JWT/session
+const APPROVER_ROLE = 'manager';
+
 async function approveExpense(id) {
   document.getElementById('row-'+id).style.opacity = '0.4';
   try {
-    const r = await fetch('/api/approve/'+id, { method: 'POST' });
+    const r = await fetch('/api/approve/'+id, {
+      method: 'POST',
+      headers: { 'X-Approver-Role': APPROVER_ROLE }
+    });
     if (!r.ok) throw new Error((await r.json()).detail);
     toast('✅ Expense approved'); await refresh();
   } catch(e) { toast('❌ '+e.message); document.getElementById('row-'+id).style.opacity='1'; }
@@ -184,7 +190,11 @@ async function rejectExpense(id) {
   const reason = document.getElementById('rr-'+id)?.value.trim() || '';
   document.getElementById('row-'+id).style.opacity = '0.4';
   try {
-    const r = await fetch('/api/reject/'+id, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({reason}) });
+    const r = await fetch('/api/reject/'+id, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Approver-Role': APPROVER_ROLE },
+      body: JSON.stringify({reason})
+    });
     if (!r.ok) throw new Error((await r.json()).detail);
     toast('🚫 Expense rejected'); await refresh();
   } catch(e) { toast('❌ '+e.message); document.getElementById('row-'+id).style.opacity='1'; }
