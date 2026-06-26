@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/MCP-Developer%20Knowledge-00B4D8?style=for-the-badge" />
   <img src="https://img.shields.io/badge/FastAPI-Dashboard-009688?style=for-the-badge&logo=fastapi" />
   <img src="https://img.shields.io/badge/Chart.js-CRM%20Dashboard-FF6384?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Tests-35%20passing-brightgreen?style=for-the-badge&logo=pytest" />
+  <img src="https://img.shields.io/badge/Tests-52%20passing-brightgreen?style=for-the-badge&logo=pytest" />
   <img src="https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python" />
   <img src="https://img.shields.io/badge/Track-Agents%20for%20Business-orange?style=for-the-badge" />
 </p>
@@ -270,8 +270,8 @@ POST /apps/expense_agent/trigger/pubsub → Pub/Sub compatible trigger
 
 | Concept | Where | What |
 |---|---|---|
-| **Agent / Multi-agent (ADK)** | `expense_agent/agent.py` | ADK 2.0 `Workflow` graph + `LoopAgent` with 2 `LlmAgent` sub-agents |
-| **MCP Server** | `expense_agent/tools.py` | `lookup_expense_policy` tool — called by LLMReviewer on every review; local policy KB with clean MCP integration point (live server in roadmap) |
+| **Agent / Multi-agent (ADK)** | `expense_agent/agent.py` | ADK 2.0 `Workflow` graph + `PolicyAgent` + `BudgetAgent` node + `LLMReviewer` + `ReviewValidator` — 4 named agents in the pipeline |
+| **MCP Server** | `expense_agent/tools.py` | `lookup_expense_policy` tool — called by PolicyAgent on every review; local policy KB with clean MCP integration point (live server in roadmap) |
 | **Antigravity** | Video | Used to scaffold, lint, and build the project throughout development |
 | **Security features** | `expense_agent/security.py` + agent.py | PII redaction, injection detection, risk scoring, Safety Gate routing |
 | **Deployability** | README + Render | Live at https://expenseiq-slnf.onrender.com · local: `uv sync` → `uvicorn` |
@@ -281,11 +281,11 @@ POST /apps/expense_agent/trigger/pubsub → Pub/Sub compatible trigger
 
 ## 🧪 Tests
 
-10 outcome-based tests covering the full security and data pipeline.
+22 outcome-based tests covering security, store, RBAC, PolicyAgent tool, and BudgetAgent tool.
 
 ```bash
 uv run pytest tests/ -v
-# 10 passed in 0.06s
+# 22 passed in 2.3s
 ```
 
 | Test | What it verifies |
@@ -298,10 +298,20 @@ uv run pytest tests/ -v
 | `test_valid_expense_passes` | Clean expense with all required fields → valid |
 | `test_invalid_category_fails` | `"gambling"` category → validation error |
 | `test_zero_amount_fails` | `amount=0` → validation error |
-| `test_record_expense_updates_stats` | `record_expense()` increments `total_submitted` |
-| `test_stats_approval_rate` | `approved + rejected + escalated == total_submitted` always |
-
-Pattern: assert on **outcomes** (return values, state mutations), not internal mock calls. `autouse=True` fixture ensures store isolation between tests.
+| `test_record_expense_flat_format` | Flat record written correctly to SQLite |
+| `test_record_expense_nested_format` | Old nested `{expense:{}}` format unwrapped correctly |
+| `test_pending_approve_flow` | HITL: add pending → approve → moves to expenses |
+| `test_pending_reject_flow` | HITL: add pending → reject → status REJECTED with reason |
+| `test_policy_lookup_meals` | PolicyAgent tool returns correct meal per diem policy |
+| `test_policy_lookup_travel` | PolicyAgent tool returns economy class + hotel cap policy |
+| `test_policy_lookup_software` | PolicyAgent tool returns license approval tiers |
+| `test_budget_check_within_budget` | BudgetAgent tool returns spend context for category |
+| `test_budget_check_large_amount` | BudgetAgent tool flags near/over budget correctly |
+| `test_budget_check_unknown_category` | BudgetAgent tool returns default budget reference |
+| `test_rbac_valid_roles` | `manager`, `finance`, `auditor` all accepted |
+| `test_rbac_invalid_role_raises` | `intern` → 403 |
+| `test_rbac_missing_header_raises` | Missing header → 403 |
+| `test_rbac_case_insensitive` | `Manager` → `manager`, `FINANCE` → `finance` |
 
 ---
 
@@ -430,13 +440,13 @@ expenseiq/
 ├── expense_agent/
 │   ├── agent.py          # ADK 2.0 Workflow graph — all nodes + LoopAgent + App
 │   ├── security.py       # PII redaction + injection detection + risk scoring
-│   ├── tools.py          # MCP policy lookup + check_review_quality tool
+│   ├── tools.py          # PolicyAgent tool (lookup_expense_policy) + BudgetAgent tool (budget_check) + check_review_quality
 │   └── __init__.py
 ├── app/
 │   └── __init__.py       # ADK app entry point
 ├── dashboard/
 │   ├── store.py          # SQLite-backed expense store + get_stats() + seed data
-│   ├── api.py            # FastAPI router — /api/stats, /api/expenses
+│   ├── api.py            # FastAPI router — /api/stats, /api/expenses, RBAC HITL endpoints
 │   └── static/
 │       └── index.html    # Chart.js CRM dashboard — 3 charts + expense table
 ├── tests/
@@ -487,21 +497,19 @@ expenseiq/
 |---|---|
 | **SQLite on Render free tier** | Database file lives on ephemeral disk — resets on new deploy. For production, swap `DB_PATH` to a mounted volume or Postgres. Seed data repopulates automatically so the dashboard is never empty. |
 | **Single currency** | All amounts treated as USD. Multi-currency support (FX conversion + per-currency thresholds) is in the roadmap. |
-| **No RBAC** | Any authenticated user can approve/reject via the dashboard. Production would layer role checks (manager vs. finance vs. auditor) on the HITL endpoints. |
+| **No RBAC** | ~~Any authenticated user can approve/reject via the dashboard.~~ **Resolved:** `X-Approver-Role` header gate on all HITL endpoints (`manager \| finance \| auditor`). Production would derive role from JWT/OAuth2 claim. |
 | **MCP policy lookup is deterministic** | `lookup_expense_policy` returns policy rules from a local knowledge base. The production roadmap wires this to a live Google Developer Knowledge MCP server for real-time policy updates. The tool call is visible in agent traces — the integration point is clean. |
-| **LoopAgent deprecation warning** | ADK 2.0 logs a `DeprecationWarning` for `LoopAgent` on import; the preferred ADK pattern is a Workflow cycle edge. `LoopAgent` is fully functional and used here intentionally to match the Capstone course's demonstrated pattern. Migration to cycle edges is a P1 roadmap item. |
 | **HITL is dashboard-native, not ADK-native** | Human approval uses FastAPI endpoints + dashboard buttons rather than ADK's `RequestInput`/`ResumabilityConfig`. This is a deliberate trade-off: the dashboard UI is richer and demoing HITL is clearer visually. ADK-native resumability is in the roadmap. |
-| **Single-agent pipeline** | No agent-to-agent communication. A planned v2 adds a PolicyAgent (live MCP queries) and BudgetAgent (tracks spend-by-department) as peer agents in a multi-agent graph. |
 
 ### Roadmap
 
-- [ ] **Multi-agent v2** — PolicyAgent + BudgetAgent as peer ADK agents
+- [x] **Multi-agent v2** — PolicyAgent (policy retrieval) + BudgetAgent (dept spend check) as peer agents in the review pipeline
+- [x] **RBAC** — `X-Approver-Role` header gate on approve/reject endpoints (`manager | finance | auditor`)
+- [x] **Workflow cycle** — LoopAgent replaced with ADK 2.0 native conditional back-edge cycle (`review_validator → {PASS: record_outcome, REVISE: iteration_guard → llm_reviewer}`)
 - [ ] **Live MCP** — wire `lookup_expense_policy` to Google Developer Knowledge MCP server
 - [ ] **ADK-native HITL** — migrate to `RequestInput` + `ResumabilityConfig`
 - [ ] **Postgres persistence** — swap SQLite for managed Postgres on Render
-- [ ] **RBAC** — role-gated approval (manager / finance / auditor)
 - [ ] **Multi-currency** — FX conversion + per-currency thresholds
-- [ ] **Workflow cycle** — migrate LoopAgent to ADK 2.0 cycle edge pattern
 
 ---
 
