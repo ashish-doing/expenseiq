@@ -1,0 +1,25 @@
+# ExpenseIQ — Docker Compose
+# Usage: docker-compose up
+# Open: http://localhost:8080/dashboard  (admin / demo23)
+
+version: "3.9"
+
+services:
+  expenseiq:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_GENAI_USE_ENTERPRISE=FALSE
+    volumes:
+      - expenseiq_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  expenseiq_data:

@@ -53,3 +53,19 @@ lint:
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	rm -f expenseiq.db
+
+## Docker Compose — build and run locally
+docker-up:
+	docker-compose up --build
+
+docker-down:
+	docker-compose down
+
+## Deploy to Google Cloud Run (requires gcloud CLI + billing)
+cloud-run-deploy:
+	gcloud run deploy expenseiq \
+	  --source . \
+	  --region us-central1 \
+	  --allow-unauthenticated \
+	  --set-env-vars GEMINI_API_KEY=$$GEMINI_API_KEY,GOOGLE_GENAI_USE_ENTERPRISE=FALSE \
+	  --port 8080

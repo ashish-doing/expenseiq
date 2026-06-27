@@ -130,8 +130,9 @@ $999,999 + SSN + injection → Safety Gate → SSN redacted → risk 1.0 → ESC
 
 ## 🏗️ Architecture
 
-```
-User submits expense JSON
+![ExpenseIQ Architecture](docs/architecture.svg)
+
+### Why this architecture wins on cost and security
          │
     [parse_expense]
     Deserialize + normalize
@@ -386,7 +387,19 @@ uv run pytest tests/test_eval.py -v -s
 - `uv` package manager
 - Google AI Studio API key (free tier)
 
-### 1. Clone & Configure
+### Docker / Cloud Run
+
+```bash
+# Local Docker
+docker-compose up --build
+# Open http://localhost:8080/dashboard (admin / demo23)
+
+# Google Cloud Run (one command)
+make cloud-run-deploy
+# or: gcloud run deploy expenseiq --source . --region us-central1 --allow-unauthenticated
+```
+
+### Local (uv)
 
 ```bash
 git clone https://github.com/ashish-doing/expenseiq.git
