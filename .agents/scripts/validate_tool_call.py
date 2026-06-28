@@ -1,33 +1,37 @@
+#!/usr/bin/env python3
 """
-PreToolUse hook: blocks destructive commands before execution.
-Reads tool call JSON from stdin, exits 1 to block, 0 to allow.
+ExpenseIQ — Antigravity PreToolUse Hook
+Validates tool calls before execution in the Antigravity vibe coding session.
+Blocks destructive commands (rm -rf, git push --force, drop table, etc.)
+Exit 0 = allow, Exit 1 = block
 """
 import sys
 import json
+import re
 
-BLOCKED = [
-    "rm -rf",
-    "del /s /q C:\\",
-    "format C:",
-    "shutdown",
-    "mkfs",
-    "DROP TABLE",
-    "> /dev/null",
+BLOCKED_PATTERNS = [
+    r"rm\s+-rf",
+    r"git\s+push\s+--force",
+    r"DROP\s+TABLE",
+    r"DELETE\s+FROM.*WHERE\s+1=1",
+    r"--no-verify",
+    r"os\.environ\[.GEMINI_API_KEY.\]\s*=\s*['\"]AI",  # hardcoded key
 ]
 
 def main():
     try:
-        context = json.load(sys.stdin)
-        command = context.get("tool_args", {}).get("CommandLine", "")
-        for dangerous in BLOCKED:
-            if dangerous.lower() in command.lower():
-                print(f"BLOCKED: Dangerous command detected: {dangerous}", file=sys.stderr)
-                sys.exit(1)
-        print("APPROVED: Command validation passed.")
-        sys.exit(0)
-    except Exception as e:
-        print(f"Validation error: {e}", file=sys.stderr)
-        sys.exit(1)
+        payload = json.loads(sys.stdin.read()) if not sys.stdin.isatty() else {}
+    except Exception:
+        payload = {}
+
+    command = payload.get("command", "") or " ".join(sys.argv[1:])
+
+    for pattern in BLOCKED_PATTERNS:
+        if re.search(pattern, command, re.IGNORECASE):
+            print(f"[BLOCKED] Destructive pattern detected: {pattern}", file=sys.stderr)
+            sys.exit(1)
+
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()

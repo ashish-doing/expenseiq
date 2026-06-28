@@ -40,8 +40,8 @@ session_service = InMemorySessionService()
 # In-memory session map: user_id → session_id (per-submitter continuity)
 _user_sessions: dict[str, str] = {}
 
-# In-memory SSE trace store: expense_id → list of trace events
-_sse_traces: dict[str, list[str]] = {}
+# SSE trace queues: expense_id → asyncio.Queue for real-time streaming
+_sse_queues: dict[str, asyncio.Queue] = {}
 
 runner = Runner(
     app=adk_app,
@@ -148,7 +148,8 @@ async def trigger_expense(request: Request):
     body["expense_id"] = expense_id
 
     session_id = await _get_or_create_session(user_id)
-    _sse_traces[expense_id] = []
+    q: asyncio.Queue = asyncio.Queue()
+    _sse_queues[expense_id] = q
 
     final_outcome = None
 
@@ -173,11 +174,15 @@ async def trigger_expense(request: Request):
                         trace_msg += f"\n  ↳ {td.get('tool','?')}({td.get('args',{})}) [{td.get('duration_ms','')}]"
                 elif isinstance(event.output, str):
                     trace_msg += f": {event.output[:80]}"
-            _sse_traces[expense_id].append(trace_msg)
+            q.put_nowait(trace_msg)
 
         if hasattr(event, "output") and event.output:
             if isinstance(event.output, dict) and event.output.get("status"):
                 final_outcome = event.output
+
+    # Signal SSE stream that processing is complete
+    if expense_id in _sse_queues:
+        _sse_queues[expense_id].put_nowait(None)  # None = sentinel = done
 
     if final_outcome and final_outcome.get("status") == "ESCALATED":
         pending_record = {
@@ -217,10 +222,20 @@ async def stream_trace(expense_id: str):
     Judges see: SecurityGate → PolicyLookup → LLMReviewer → ReviewValidator → PASS
     """
     async def event_generator():
-        traces = _sse_traces.get(expense_id, [])
-        for msg in traces:
+        q = _sse_queues.get(expense_id)
+        if q is None:
+            yield f"data: {json.dumps({'error': 'No trace found for expense_id', 'expense_id': expense_id})}\n\n"
+            return
+        while True:
+            try:
+                msg = await asyncio.wait_for(q.get(), timeout=30.0)
+            except asyncio.TimeoutError:
+                yield f"data: {json.dumps({'done': True, 'expense_id': expense_id, 'reason': 'timeout'})}\n\n"
+                return
+            if msg is None:  # sentinel — agent finished
+                yield f"data: {json.dumps({'done': True, 'expense_id': expense_id})}\n\n"
+                return
             yield f"data: {json.dumps({'trace': msg})}\n\n"
-        yield f"data: {json.dumps({'done': True, 'expense_id': expense_id})}\n\n"
 
     return StreamingResponse(
         event_generator(),
@@ -236,8 +251,9 @@ async def stream_trace(expense_id: str):
 @fastapi_app.get("/api/explain/{expense_id}")
 async def explain_decision(expense_id: str):
     """
-    Policy Explainer: agent answers 'Why was this decision made?' using session context.
-    Demonstrates Day 3 memory + Day 2 tool use + Day 1 agent reasoning in one endpoint.
+    Policy Explainer: surfaces decision metadata from the persistent store as a
+    human-readable explanation. Reads SQLite record, returns structured context
+    including status, reason, risk score, and security alert state.
     """
     from dashboard.store import get_all_expenses
     expenses = get_all_expenses()

@@ -73,6 +73,12 @@ def validate_expense_fields(expense: dict) -> tuple[bool, str]:
         return False, f"Category must be one of: {', '.join(ALLOWED_CATEGORIES)}"
     if not expense.get("description", "").strip():
         return False, "Description cannot be empty"
+
+    # Email format check — matches SKILL.md validation rule
+    submitter = expense.get("submitter", "")
+    if submitter and "@" not in submitter:
+        return False, "Submitter must be a valid email address (e.g. alice@corp.com)."
+
     try:
         datetime.fromisoformat(str(expense.get("date", "")))
     except ValueError:

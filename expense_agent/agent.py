@@ -369,6 +369,7 @@ review_validator = LlmAgent(
     name="ReviewValidator",
     model=GEMINI_MODEL,
     include_contents="none",
+    output_schema=ReviewDecision,
     instruction="""You are validating an expense review for completeness.
 
 Review to validate: "{review_reason}"

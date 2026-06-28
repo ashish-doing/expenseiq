@@ -183,7 +183,7 @@
     <a href="#how-it-works" class="btn btn-ghost">See how it works ↓</a>
   </div>
   <div class="hero-stats">
-    <div class="stat"><div class="stat-val green">96ms</div><div class="stat-label">Auto-approve latency</div></div>
+    <div class="stat"><div class="stat-val green"><200ms</div><div class="stat-label">Auto-approve latency</div></div>
     <div class="stat"><div class="stat-val red">0</div><div class="stat-label">LLM calls on injection</div></div>
     <div class="stat"><div class="stat-val blue">3</div><div class="stat-label">Review loop max iterations</div></div>
     <div class="stat"><div class="stat-val green">22/22</div><div class="stat-label">Tests passing</div></div>
@@ -335,6 +335,16 @@
         <td>3-command local setup: uv sync → adk web → uvicorn</td>
       </tr>
       <tr>
+        <td><span class="check">✅</span> Sessions &amp; State (Day 3)</td>
+        <td><code>fast_api_app.py</code></td>
+        <td>Per-submitter InMemorySessionService session reuse — same user_id gets same session across calls</td>
+      </tr>
+      <tr>
+        <td><span class="check">✅</span> Long-term Memory (Day 3)</td>
+        <td><code>expense_agent/agent.py</code></td>
+        <td>SQLite-backed submitter history injected into LLMReviewer — "Alice's 3rd expense this month, $450 cumulative"</td>
+      </tr>
+      <tr>
         <td><span class="check">✅</span> Agent skills</td>
         <td><code>.agents/skills/expense-validator/</code></td>
         <td>Level 4 deterministic skill: Python script, exit codes, no LLM</td>
@@ -351,8 +361,8 @@
   <div class="result-row">
     <div class="result-card">
       <div class="r-label">Auto-approve path</div>
-      <div class="r-val" style="color:var(--accent2)">96ms</div>
-      <div class="r-sub">$45 team lunch · 0 LLM calls · AUTO_APPROVED</div>
+      <div class="r-val" style="color:var(--accent2)"><200ms</div>
+      <div class="r-sub">$45 team lunch · 0 LLM calls · AUTO_APPROVED in <200ms</div>
     </div>
     <div class="result-card">
       <div class="r-label">Review loop path</div>
@@ -367,7 +377,7 @@
     <div class="result-card">
       <div class="r-label">Test suite</div>
       <div class="r-val" style="color:var(--accent2)">22/22</div>
-      <div class="r-sub">Outcome-based tests · 0.06s · all green</div>
+      <div class="r-sub">Outcome-based tests · 2.3s · all green</div>
     </div>
   </div>
 
@@ -384,7 +394,7 @@
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
         <img src="screenshots/03-auto-approve-traces.png" style="width:100%;display:block;" alt="Traces"/>
-        <div style="padding:12px 16px;font-size:0.78rem;color:var(--dim);">Traces — 96ms total, zero LLM calls on auto-approve path</div>
+        <div style="padding:12px 16px;font-size:0.78rem;color:var(--dim);">Traces — <200ms total, zero LLM calls on auto-approve path</div>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
         <img src="screenshots/05-dashboard.png" style="width:100%;display:block;" alt="Dashboard"/>
@@ -402,7 +412,7 @@
   <div class="stack-grid">
     <div class="stack-card"><div class="icon">🤖</div><h4>Google ADK 2.0</h4><p>Workflow graph, LlmAgent, tool callbacks, per-submitter sessions — ADK 2.0</p></div>
     <div class="stack-card"><div class="icon">✨</div><h4>Gemini 2.5 Flash</h4><p>LLM reviewer and validator inside the Self-Correcting ReviewLoop</p></div>
-    <div class="stack-card"><div class="icon">🔌</div><h4>MCP Server</h4><p>Google Developer Knowledge for real-time expense policy grounding</p></div>
+    <div class="stack-card"><div class="icon">🔌</div><h4>MCP Server</h4><p>Local policy knowledge base — clean MCP integration point (live server in roadmap)</p></div>
     <div class="stack-card"><div class="icon">🛡️</div><h4>Security Module</h4><p>PII redaction + injection detection + numeric risk scoring in pure Python</p></div>
     <div class="stack-card"><div class="icon">⚡</div><h4>FastAPI + uvicorn</h4><p>Agent trigger API + dashboard serving + Pub/Sub compatible endpoint</p></div>
     <div class="stack-card"><div class="icon">📊</div><h4>Chart.js 4.4.1</h4><p>Live CRM dashboard — donut, bar, doughnut charts, auto-refresh 10s</p></div>

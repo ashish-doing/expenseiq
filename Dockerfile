@@ -7,10 +7,10 @@ RUN pip install uv --quiet
 
 # Copy dependency files first (layer cache)
 COPY pyproject.toml .
-COPY uv.lock* .
+COPY uv.lock .
 
 # Install dependencies
-RUN uv sync --no-dev 2>/dev/null || uv pip install -r pyproject.toml --system
+RUN uv sync --no-dev 2>/dev/null || pip install -e . --system
 
 # Copy source
 COPY . .

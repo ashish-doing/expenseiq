@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Syne&weight=800&size=24&duration=3000&pause=1000&color=00E5FF&center=true&vCenter=true&width=1200&lines=ExpenseIQ+%E2%80%94+Business+Expense+Intelligence+Agent;Safety+Gate+%2B+Self-Correcting+Loop+%2B+Live+CRM+Dashboard;%24999%2C999+injection+attempt+caught+in+96ms%3B+LLM+never+called;Built+with+Google+ADK+2.0+%C2%B7+Gemini+2.5+Flash+%C2%B7+MCP" alt="ExpenseIQ" />
+<img src="https://readme-typing-svg.demolab.com?font=Syne&weight=800&size=24&duration=3000&pause=1000&color=00E5FF&center=true&vCenter=true&width=1200&lines=ExpenseIQ+%E2%80%94+Business+Expense+Intelligence+Agent;Safety+Gate+%2B+Self-Correcting+Loop+%2B+Live+CRM+Dashboard;%24999%2C999+injection+attempt+caught+in+%3C200ms%3B+LLM+never+called;Built+with+Google+ADK+2.0+%C2%B7+Gemini+2.5+Flash+%C2%B7+MCP" alt="ExpenseIQ" />
 
 </div>
 
@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/MCP-Developer%20Knowledge-00B4D8?style=for-the-badge" />
   <img src="https://img.shields.io/badge/FastAPI-Dashboard-009688?style=for-the-badge&logo=fastapi" />
   <img src="https://img.shields.io/badge/Chart.js-CRM%20Dashboard-FF6384?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Tests-52%20passing-brightgreen?style=for-the-badge&logo=pytest" />
+  <img src="https://img.shields.io/badge/Tests-22%20unit%20%2B%2030%20eval-brightgreen-brightgreen?style=for-the-badge&logo=pytest" />
   <img src="https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python" />
   <img src="https://img.shields.io/badge/Track-Agents%20for%20Business-orange?style=for-the-badge" />
 </p>
@@ -231,12 +231,12 @@ Event #4 — `status: ESCALATED`, `risk_score: 1`, `security_alert: true`, `reda
 
 The ReviewLoop is implemented as a native ADK 2.0 Workflow cycle (no LoopAgent) with two `LlmAgent` nodes — an established ADK iterative-review pattern demonstrated in the Nov 2025 AI Agents Intensive course codelabs.
 
+**How it self-corrects (ADK 2.0 native Workflow cycle — no LoopAgent):**
+
 ```python
-review_loop = LoopAgent(
-    name="ReviewLoop",
-    sub_agents=[llm_reviewer, review_validator],
-    max_iterations=3,
-)
+# Workflow conditional back-edge — review_validator routes PASS or REVISE
+(review_validator, {"PASS": record_outcome, "REVISE": iteration_guard}),
+(iteration_guard,  {"retry": llm_reviewer, "escalate": record_outcome}),
 ```
 
 **How it self-corrects:**
@@ -282,7 +282,7 @@ GET  /api/stats              → aggregated stats for all charts
 GET  /api/expenses           → recent expense records (SQLite-backed)
 GET  /api/pending            → expenses awaiting HITL approval
 GET  /api/stream/{id}        → SSE real-time agent trace stream
-GET  /api/explain/{id}       → Policy Explainer: "Why was this decision made?"
+GET  /api/explain/{id}       → Decision metadata: status, reason, risk score, security alert from store
 POST /apps/expense_agent/trigger        → submit expense (JSON body, per-submitter session)
 POST /batch                            → concurrent batch processing (asyncio.gather, up to 50)
 POST /apps/expense_agent/trigger/pubsub → Pub/Sub compatible trigger
@@ -299,6 +299,8 @@ POST /apps/expense_agent/trigger/pubsub → Pub/Sub compatible trigger
 | **Antigravity** | Video | Used to scaffold, lint, and build the project throughout development |
 | **Security features** | `expense_agent/security.py` + agent.py | PII redaction, injection detection, risk scoring, Safety Gate routing |
 | **Deployability** | README + Render | Live at https://expenseiq-slnf.onrender.com · local: `uv sync` → `uvicorn` |
+| **Sessions & State (Day 3)** | `fast_api_app.py` | Per-submitter `InMemorySessionService` session reuse — same user reuses same session across calls |
+| **Long-term Memory (Day 3)** | `expense_agent/agent.py` | SQLite-backed submitter history injected into `LLMReviewer` — "Alice's 3rd expense this month, $450 cumulative" |
 | **Agent skills** | `.agents/skills/expense-validator/` | Level 4 deterministic skill: Python script validates fields, exit code = pass/fail |
 
 ---
