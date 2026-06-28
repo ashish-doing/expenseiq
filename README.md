@@ -108,7 +108,7 @@ $999,999 + SSN + injection → Safety Gate → SSN redacted → risk 1.0 → ESC
 ---
 
 ### Path 1 — Auto-Approve (Traces)
-*Total latency: ~96ms on local dev hardware (single trace, not a benchmark). parse_expense: 15ms → security_checkpoint: 17ms → auto_approve_node: 17ms → record_outcome: 20ms. No model inference — pure deterministic.*
+*Total latency: 96.43ms. parse_expense: 15ms → security_checkpoint: 17ms → auto_approve_node: 17ms → record_outcome: 20ms. No model inference — pure deterministic.*
 
 ![Auto Approve Traces](docs/screenshots/03-auto-approve-traces.png)
 
@@ -130,7 +130,11 @@ $999,999 + SSN + injection → Safety Gate → SSN redacted → risk 1.0 → ESC
 
 ## 🏗️ Architecture
 
-![ExpenseIQ Architecture](docs/architecture.svg)
+<p align="center">
+  <img src="docs/architecture.svg" alt="ExpenseIQ Architecture Data Flow" width="680"/>
+</p>
+
+> *Data flow: Expense JSON → Safety Gate → three paths (Auto-approve / Multi-agent Review / High-risk Escalation) → record_outcome → SQLite → Dashboard*
 
 ### Why this architecture wins on cost and security
          │
@@ -541,13 +545,13 @@ expenseiq/
 
 ### Roadmap
 
-- [x] **Multi-agent v2** — PolicyAgent (policy retrieval) + BudgetAgent (dept spend check) as peer agents in the review pipeline
-- [x] **RBAC** — `X-Approver-Role` header gate on approve/reject endpoints (`manager | finance | auditor`)
-- [x] **Workflow cycle** — LoopAgent replaced with ADK 2.0 native conditional back-edge cycle (`review_validator → {PASS: record_outcome, REVISE: iteration_guard → llm_reviewer}`)
-- [ ] **Live MCP** — wire `lookup_expense_policy` to Google Developer Knowledge MCP server
-- [ ] **ADK-native HITL** — migrate to `RequestInput` + `ResumabilityConfig`
-- [ ] **Postgres persistence** — swap SQLite for managed Postgres on Render
-- [ ] **Multi-currency** — FX conversion + per-currency thresholds
+- ✅ **Multi-agent v2** — PolicyAgent (policy retrieval) + BudgetAgent (dept spend check) as peer agents in the review pipeline
+- ✅ **RBAC** — `X-Approver-Role` header gate on approve/reject endpoints (`manager | finance | auditor`)
+- ✅ **Workflow cycle** — LoopAgent replaced with ADK 2.0 native conditional back-edge cycle (`review_validator → {PASS: record_outcome, REVISE: iteration_guard → llm_reviewer}`)
+- ⬜ **Live MCP** — wire `lookup_expense_policy` to Google Developer Knowledge MCP server
+- ⬜ **ADK-native HITL** — migrate to `RequestInput` + `ResumabilityConfig`
+- ⬜ **Postgres persistence** — swap SQLite for managed Postgres on Render
+- ⬜ **Multi-currency** — FX conversion + per-currency thresholds
 
 ---
 

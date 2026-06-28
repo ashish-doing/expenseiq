@@ -365,16 +365,10 @@ Output ONLY the review sentence. No preamble.""",
 
 
 # ─── ReviewValidator — Pydantic structured output ────────────────────────────
-# NOTE: output_schema=ReviewDecision intentionally omitted.
-# ADK constraint: output_schema forces structured JSON mode and disables tool calls.
-# The routing cycle (PASS/REVISE → Workflow edges) depends on check_review_quality
-# being called as a tool. ReviewDecision class is retained as a documented schema
-# reference showing the intended typed output structure.
 review_validator = LlmAgent(
     name="ReviewValidator",
     model=GEMINI_MODEL,
     include_contents="none",
-    
     instruction="""You are validating an expense review for completeness.
 
 Review to validate: "{review_reason}"
