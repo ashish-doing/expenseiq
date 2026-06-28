@@ -108,7 +108,7 @@ $999,999 + SSN + injection → Safety Gate → SSN redacted → risk 1.0 → ESC
 ---
 
 ### Path 1 — Auto-Approve (Traces)
-*Total latency: 96.43ms. parse_expense: 15ms → security_checkpoint: 17ms → auto_approve_node: 17ms → record_outcome: 20ms. No model inference — pure deterministic.*
+*Total latency: ~96ms on local dev hardware (single trace, not a benchmark). parse_expense: 15ms → security_checkpoint: 17ms → auto_approve_node: 17ms → record_outcome: 20ms. No model inference — pure deterministic.*
 
 ![Auto Approve Traces](docs/screenshots/03-auto-approve-traces.png)
 
