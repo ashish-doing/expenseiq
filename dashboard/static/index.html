@@ -246,7 +246,7 @@ async function refresh() {
 
     // KPIs — exclude rejected/NaN from amount display
     const validAmount = Array.isArray(expenses)
-      ? expenses.filter(e => e.status !== 'REJECTED' && !isNaN(parseFloat(e.amount))).reduce((s,e) => s + parseFloat(e.amount||0), 0)
+      ? expenses.filter(e => ['APPROVED','AUTO_APPROVED'].includes(e.status)).reduce((s,e) => s + parseFloat(e.amount||0), 0)
       : 0;
 
     document.getElementById('k-total').textContent = stats.total_expenses ?? '—';
