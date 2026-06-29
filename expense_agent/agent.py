@@ -425,12 +425,15 @@ def record_outcome(ctx: Context, node_input=None) -> Event:
         )
 
     # Attach tool traces for SSE stream
-    tool_traces = {
-        k: v for k, v in ctx.state.items()
-        if k.startswith("tool_trace_")
-    }
-    if tool_traces:
-        outcome["tool_traces"] = tool_traces
+    try:
+        tool_traces = {
+            k: ctx.state[k] for k in ctx.state
+            if k.startswith("tool_trace_")
+        }
+        if tool_traces:
+            outcome["tool_traces"] = tool_traces
+    except Exception:
+        pass
 
     try:
         from dashboard.store import record_expense
