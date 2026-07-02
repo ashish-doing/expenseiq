@@ -7,6 +7,21 @@ import re
 SSN_REGEX = re.compile(r"\b\d{3}-\d{2}-\d{4}\b|\b\d{9}\b")
 CC_REGEX = re.compile(r"\b(?:\d[ -]*?){13,16}\b")
 
+
+def _luhn_check(number: str) -> bool:
+    """Luhn algorithm — filters false-positive CC matches (invoice/tracking numbers)."""
+    digits = [int(d) for d in number if d.isdigit()]
+    if len(digits) < 13:
+        return False
+    total = 0
+    for i, d in enumerate(reversed(digits)):
+        total += d if i % 2 == 0 else (d * 2 - 9 if d * 2 > 9 else d * 2)
+    return total % 10 == 0
+
+
+# Pattern-based (10 known English phrases). Known limitation: paraphrase attacks,
+# non-English, and unicode lookalikes bypass this gate.
+# Production: add LLM-based injection classifier or embedding-similarity check.
 INJECTION_PATTERNS = [
     r"ignore\s+previous",
     r"system\s+override",
@@ -32,8 +47,8 @@ def redact_pii(text: str) -> tuple[str, list[str]]:
     if SSN_REGEX.search(text):
         text = SSN_REGEX.sub("[REDACTED SSN]", text)
         redacted.append("SSN")
-    if CC_REGEX.search(text):
-        text = CC_REGEX.sub("[REDACTED CC]", text)
+    if any(_luhn_check(''.join(filter(str.isdigit, m))) for m in CC_REGEX.findall(text)):
+        text = CC_REGEX.sub(lambda m: "[REDACTED CC]" if _luhn_check(''.join(filter(str.isdigit, m.group()))) else m.group(), text)
         redacted.append("Credit Card")
     return text, redacted
 

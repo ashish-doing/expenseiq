@@ -108,7 +108,7 @@ $999,999 + SSN + injection → Safety Gate → SSN redacted → risk 1.0 → ESC
 ---
 
 ### Path 1 — Auto-Approve (Traces)
-*Total latency: 96.43ms. parse_expense: 15ms → security_checkpoint: 17ms → auto_approve_node: 17ms → record_outcome: 20ms. No model inference — pure deterministic.*
+*Total latency: ~100ms on local dev hardware (single trace, not a benchmark). parse_expense → security_checkpoint → auto_approve_node → record_outcome. No model inference — pure deterministic.*
 
 ![Auto Approve Traces](docs/screenshots/03-auto-approve-traces.png)
 
@@ -386,12 +386,9 @@ uv run pytest tests/test_eval.py -v -s
   CI threshold     : 95%
 ```
 
-## ⚡ Quick Start
+## 🔧 Manual Setup (Alternative)
 
-### Prerequisites
-- Python 3.11+
-- `uv` package manager
-- Google AI Studio API key (free tier)
+> If you prefer step-by-step over `make demo`, or want to run the ADK Playground separately:
 
 ### Docker / Cloud Run
 
@@ -539,7 +536,7 @@ expenseiq/
 |---|---|
 | **SQLite on Render free tier** | Database file lives on ephemeral disk — resets on new deploy. For production, swap `DB_PATH` to a mounted volume or Postgres. Seed data repopulates automatically so the dashboard is never empty. |
 | **Single currency** | All amounts treated as USD. Multi-currency support (FX conversion + per-currency thresholds) is in the roadmap. |
-| **No RBAC** | ~~Any authenticated user can approve/reject via the dashboard.~~ **Resolved:** `X-Approver-Role` header gate on all HITL endpoints (`manager \| finance \| auditor`). Production would derive role from JWT/OAuth2 claim. |
+| **Demo-grade auth** | `/dashboard` requires HTTP Basic Auth (`admin/demo23`). HITL endpoints require `X-Approver-Role` header derived from verified identity. Production would use JWT/OAuth2 with org role claims. |
 | **MCP policy lookup is deterministic** | `lookup_expense_policy` returns policy rules from a local knowledge base. The production roadmap wires this to a live Google Developer Knowledge MCP server for real-time policy updates. The tool call is visible in agent traces — the integration point is clean. |
 | **HITL is dashboard-native, not ADK-native** | Human approval uses FastAPI endpoints + dashboard buttons rather than ADK's `RequestInput`/`ResumabilityConfig`. This is a deliberate trade-off: the dashboard UI is richer and demoing HITL is clearer visually. ADK-native resumability is in the roadmap. |
 
