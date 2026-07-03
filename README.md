@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/MCP-Developer%20Knowledge-00B4D8?style=for-the-badge" />
   <img src="https://img.shields.io/badge/FastAPI-Dashboard-009688?style=for-the-badge&logo=fastapi" />
   <img src="https://img.shields.io/badge/Chart.js-CRM%20Dashboard-FF6384?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Tests-22%20unit%20%2B%2030%20eval-brightgreen-brightgreen?style=for-the-badge&logo=pytest" />
+  <img src="https://img.shields.io/badge/Tests-22%20unit%20%2B%2030%20eval-brightgreen?style=for-the-badge&logo=pytest" />
   <img src="https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python" />
   <img src="https://img.shields.io/badge/Track-Agents%20for%20Business-orange?style=for-the-badge" />
 </p>
@@ -137,36 +137,38 @@ $999,999 + SSN + injection → Safety Gate → SSN redacted → risk 1.0 → ESC
 > *Data flow: Expense JSON → Safety Gate → three paths (Auto-approve / Multi-agent Review / High-risk Escalation) → record_outcome → SQLite → Dashboard*
 
 ### Why this architecture wins on cost and security
+
+```text
          │
     [parse_expense]
     Deserialize + normalize
          │
     [security_checkpoint]  ◄── SAFETY GATE
     • SSN regex redaction
-    • Credit card regex redaction  
+    • Credit card regex redaction
     • Injection pattern detection (10 patterns)
     • Risk score: 0.0 – 1.0
          │
     ┌────┼──────────────────┐
     │    │                  │
     ▼    ▼                  ▼
-[auto_  [PolicyAgent]   [high_risk]
-approve] ↓ lookup_policy  ESCALATED
-No LLM  [BudgetCheck]   LLM bypassed
-    │   ↓ SQLite spend       │
-    │   [LLMReviewer]        │
-    │   Gemini 2.5 Flash     │
-    │   policy+budget+memory │
-    │   security context     │
-    │   writes review_reason │
-    │    │                   │
-    │   [ReviewValidator]    │
-    │   checks 3 criteria:   │
-    │   business purpose ✓   │
-    │   dollar amount ✓      │
-    │   justification ✓      │
-    │   → PASS → record      │
-    │   → REVISE → guard     │
+[auto_  [PolicyAgent]       [high_risk]
+approve] ↓ lookup_policy    ESCALATED
+No LLM  [BudgetCheck]       LLM bypassed
+    │   ↓ SQLite spend      │
+    │   [LLMReviewer]       │
+    │   Gemini 2.5 Flash    │
+    │   policy+budget+memory│
+    │   security context    │
+    │   writes review_reason│
+    │    │                  │
+    │   [ReviewValidator]   │
+    │   checks 3 criteria:  │
+    │    business purpose ✓ │
+    │    dollar amount ✓    │
+    │    justification ✓    │
+    │   → PASS → record     │
+    │   → REVISE → guard    │
     │    │                  │
     └────┤                  │
          ▼                  │
@@ -176,8 +178,6 @@ No LLM  [BudgetCheck]   LLM bypassed
     [FastAPI /dashboard]
     Chart.js CRM — live stats
 ```
-
-### Why this architecture wins on cost and security
 
 | Path | LLM calls | Latency | When |
 |---|---|---|---|
