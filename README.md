@@ -308,6 +308,40 @@ POST /apps/expense_agent/trigger/pubsub → Pub/Sub compatible trigger
 | **Agent skills** | `.agents/skills/expense-validator/` | Level 4 deterministic skill: Python script validates fields, exit code = pass/fail |
 
 ---
+## 🪄 How I Built This With Antigravity
+
+Antigravity (the vibe coding IDE from the course) was used throughout development for scaffolding, linting, and enforcing rules.
+
+**`.agents/CONTEXT.md` — persistent rules loaded every session:**
+```markdown
+## Core Rules
+- Always use model: gemini-2.5-flash
+- Never hardcode API keys — always use os.environ or .env
+- Run `uv run pytest tests/ -v` after every code change
+- All expenses processed through security_checkpoint before LLM
+- Use `uv run` prefix for all Python commands
+
+## Security Standards
+- PII redaction must happen BEFORE any LLM call
+- Injection detection must happen BEFORE any LLM call
+- Risk score >= 0.80 routes to escalation, never to LLM
+```
+
+**`.agents/hooks.json` — PreToolUse hook blocks destructive commands:**
+```json
+{
+  "enabled": true,
+  "PreToolUse": [
+    {
+      "matcher": "run_command",
+      "command": "python .agents/scripts/validate_tool_call.py",
+      "timeout": 10
+    }
+  ]
+}
+```
+
+This hook fires before every tool execution in the Antigravity session — the same pre-gate pattern used in the security_checkpoint node. The course's vibe coding workflow shaped the agent's architecture directly.
 
 ## 🧪 Tests
 
@@ -591,38 +625,3 @@ Built for the **Kaggle AI Agents: Intensive Vibe Coding Capstone 2026**
 
 </div>
 ---
-
-## 🪄 How I Built This With Antigravity
-
-Antigravity (the vibe coding IDE from the course) was used throughout development for scaffolding, linting, and enforcing rules.
-
-**`.agents/CONTEXT.md` — persistent rules loaded every session:**
-```markdown
-## Core Rules
-- Always use model: gemini-2.5-flash
-- Never hardcode API keys — always use os.environ or .env
-- Run `uv run pytest tests/ -v` after every code change
-- All expenses processed through security_checkpoint before LLM
-- Use `uv run` prefix for all Python commands
-
-## Security Standards
-- PII redaction must happen BEFORE any LLM call
-- Injection detection must happen BEFORE any LLM call
-- Risk score >= 0.80 routes to escalation, never to LLM
-```
-
-**`.agents/hooks.json` — PreToolUse hook blocks destructive commands:**
-```json
-{
-  "enabled": true,
-  "PreToolUse": [
-    {
-      "matcher": "run_command",
-      "command": "python .agents/scripts/validate_tool_call.py",
-      "timeout": 10
-    }
-  ]
-}
-```
-
-This hook fires before every tool execution in the Antigravity session — the same pre-gate pattern used in the security_checkpoint node. The course's vibe coding workflow shaped the agent's architecture directly.
