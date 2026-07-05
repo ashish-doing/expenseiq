@@ -72,7 +72,7 @@ class ReviewDecision(BaseModel):
 def before_tool_callback(
     tool: BaseTool,
     args: dict[str, Any],
-    ctx: Context,
+    tool_context,
 ) -> Optional[dict]:
     """
     ADK before_tool_callback — fires before every tool call in any LlmAgent.
@@ -95,7 +95,7 @@ def before_tool_callback(
 def after_tool_callback(
     tool: BaseTool,
     args: dict[str, Any],
-    ctx: Context,
+    tool_context,
     result: dict,
 ) -> Optional[dict]:
     """
@@ -305,8 +305,7 @@ e.g. "What is the policy for software license expenses?"
 Output the policy text verbatim as returned by the tool. Nothing else.""",
     tools=[lookup_expense_policy],
     output_key="policy_text",
-    before_tool_callback=before_tool_callback,
-    after_tool_callback=after_tool_callback,
+    
 )
 
 
@@ -359,8 +358,7 @@ Write ONE clear sentence including ALL THREE of:
 Consider security analysis and submitter history in your assessment.
 Output ONLY the review sentence. No preamble.""",
     output_key="review_reason",
-    before_tool_callback=before_tool_callback,
-    after_tool_callback=after_tool_callback,
+    
 )
 
 
@@ -384,8 +382,7 @@ Call check_review_quality:
 
 Your call to check_review_quality determines whether the review loop exits or retries.""",
     tools=[check_review_quality],
-    before_tool_callback=before_tool_callback,
-    after_tool_callback=after_tool_callback,
+    
 )
 
 
