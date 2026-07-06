@@ -20,13 +20,12 @@
 </p>
 
 <p align="center">
-  ⚡ <a href="#-2-minute-quick-start">Quick Start</a> &nbsp;•&nbsp;
-  🌐 <a href="#-live-demo">Live Demo</a> &nbsp;•&nbsp;
-  🏗️ <a href="#-architecture">Architecture</a> &nbsp;•&nbsp;
-  📐 <a href="./ARCHITECTURE.md">Full Diagrams</a> &nbsp;•&nbsp;
-  🛡️ <a href="#-safety-gate--security-design">Security Design</a> &nbsp;•&nbsp;
+  🌐 <a href="https://ashish-doing.github.io/expenseiq">Landing Page</a> &nbsp;•&nbsp;
+  🚀 <a href="https://expenseiq-slnf.onrender.com/dashboard">Live Dashboard</a> &nbsp;•&nbsp;
+  🎬 <a href="#-demo-video">Demo Video</a> &nbsp;•&nbsp;
+  📐 <a href="./ARCHITECTURE.md">Full Architecture</a>
+</p>
   🔄 <a href="#-self-correcting-review-loop">Review Loop</a> &nbsp;•&nbsp;
-  📊 <a href="#-crm-dashboard">Dashboard</a>
 </p>
 
 ---
@@ -142,45 +141,28 @@ $999,999 + SSN + injection → Safety Gate → SSN redacted → risk 1.0 → ESC
 
 ### Why this architecture wins on cost and security
 
-```text
-         │
-    [parse_expense]
-    Deserialize + normalize
-         │
-    [security_checkpoint]  ◄── SAFETY GATE
-    • SSN regex redaction
-    • Credit card regex redaction
-    • Injection pattern detection (10 patterns)
-    • Risk score: 0.0 – 1.0
-         │
-    ┌────┼──────────────────┐
-    │    │                  │
-    ▼    ▼                  ▼
-[auto_  [PolicyAgent]       [high_risk]
-approve] ↓ lookup_policy    ESCALATED
-No LLM  [BudgetCheck]       LLM bypassed
-    │   ↓ SQLite spend      │
-    │   [LLMReviewer]       │
-    │   Gemini 2.5 Flash    │
-    │   policy+budget+memory│
-    │   security context    │
-    │   writes review_reason│
-    │    │                  │
-    │   [ReviewValidator]   │
-    │   checks 3 criteria:  │
-    │    business purpose ✓ │
-    │    dollar amount ✓    │
-    │    justification ✓    │
-    │   → PASS → record     │
-    │   → REVISE → guard    │
-    │    │                  │
-    └────┤                  │
-         ▼                  │
-    [record_outcome] ◄──────┘
-    writes to dashboard store
-         │
-    [FastAPI /dashboard]
-    Chart.js CRM — live stats
+```mermaid
+flowchart TB
+    A["parse_expense\nDeserialize + normalize"] --> B["security_checkpoint\nSAFETY GATE"]
+
+    B -->|"risk < 0.40"| C["auto_approve_node\nNo LLM · ~17ms"]
+    B -->|"risk 0.40–0.79\nclean input"| D
+    B -->|"risk ≥ 0.80 or injection"| H["high_risk_node\nESCALATED · LLM bypassed"]
+
+    subgraph D["ReviewLoop"]
+        direction TB
+        D1["PolicyAgent\nlookup_policy"] --> D2["BudgetCheck\nSQLite spend"]
+        D2 --> D3["LLMReviewer\nGemini 2.5 Flash\npolicy + budget + memory"]
+        D3 --> D4["ReviewValidator\nchecks: purpose ✓ amount ✓ justification ✓"]
+        D4 -->|PASS| D5[record]
+        D4 -->|REVISE, iter < 3| D3
+    end
+
+    C --> E["record_outcome\nwrites to dashboard store"]
+    D5 --> E
+    H --> E
+
+    E --> F["FastAPI /dashboard\nChart.js CRM — live stats"]
 ```
 
 | Path | LLM calls | Latency | When |
