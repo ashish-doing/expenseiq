@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://readme-typing-svg.demolab.com?font=Syne&weight=800&size=24&duration=3000&pause=1000&color=00E5FF&center=true&vCenter=true&width=1200&lines=ExpenseIQ+%E2%80%94+Business+Expense+Intelligence+Agent;Safety+Gate+%2B+Self-Correcting+Loop+%2B+Live+CRM+Dashboard;%24999%2C999+injection+attempt+caught+in+%3C200ms%3B+LLM+never+called;Built+with+Google+ADK+2.0+%C2%B7+Gemini+2.5+Flash+%C2%B7+MCP" alt="ExpenseIQ" />
+<img src="https://readme-typing-svg.demolab.com?font=Syne&weight=800&size=24&duration=3000&pause=1000&color=3B82F6&background=080B14&center=true&vCenter=true&width=1200&lines=ExpenseIQ+%E2%80%94+Business+Expense+Intelligence+Agent;Safety+Gate+%2B+Self-Correcting+Loop+%2B+Live+CRM+Dashboard;%24999%2C999+injection+attempt+caught+in+%3C200ms%3B+LLM+never+called;Built+with+Google+ADK+2.0+%C2%B7+Gemini+2.5+Flash+%C2%B7+MCP" alt="ExpenseIQ" />
 
 </div>
 
@@ -20,8 +20,10 @@
 </p>
 
 <p align="center">
-  ⚡ <a href="#-quick-start">Quick Start</a> &nbsp;•&nbsp;
+  ⚡ <a href="#-2-minute-quick-start">Quick Start</a> &nbsp;•&nbsp;
+  🌐 <a href="#-live-demo">Live Demo</a> &nbsp;•&nbsp;
   🏗️ <a href="#-architecture">Architecture</a> &nbsp;•&nbsp;
+  📐 <a href="./ARCHITECTURE.md">Full Diagrams</a> &nbsp;•&nbsp;
   🛡️ <a href="#-safety-gate--security-design">Security Design</a> &nbsp;•&nbsp;
   🔄 <a href="#-self-correcting-review-loop">Review Loop</a> &nbsp;•&nbsp;
   📊 <a href="#-crm-dashboard">Dashboard</a>
@@ -58,7 +60,7 @@ make submit-attack    # $999,999 + injection → ESCALATED, 0 LLM calls
 
 ## 🎬 Demo Video
 
-> 📹 **Video coming — uploading before July 6 deadline. See architecture walkthrough below.**
+> 📹 **Video coming — uploading before the deadline. See architecture walkthrough below in the meantime.**
 
 ---
 
@@ -135,6 +137,8 @@ $999,999 + SSN + injection → Safety Gate → SSN redacted → risk 1.0 → ESC
 </p>
 
 > *Data flow: Expense JSON → Safety Gate → three paths (Auto-approve / Multi-agent Review / High-risk Escalation) → record_outcome → SQLite → Dashboard*
+>
+> 📐 For the full component breakdown, sequence diagrams, and design-decision rationale, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
 
 ### Why this architecture wins on cost and security
 
@@ -266,6 +270,8 @@ $250 Annual Figma license for design team
 
 Total latency for this path: ~3–5s depending on Gemini API latency. Single-trace screenshots are not benchmarks. Zero manual intervention.
 
+📐 For the full sequence diagram of this loop, see **[ARCHITECTURE.md § 3](./ARCHITECTURE.md#3-the-self-correcting-review-loop)**.
+
 ---
 
 ## 📊 CRM Dashboard
@@ -284,7 +290,7 @@ API endpoints:
 ```
 GET  /api/stats              → aggregated stats for all charts
 GET  /api/expenses           → recent expense records (SQLite-backed)
-GET  /api/pending            → expenses awaiting HITL approval
+GET  /api/pending             → expenses awaiting HITL approval
 GET  /api/stream/{id}        → SSE real-time agent trace stream
 GET  /api/explain/{id}       → Decision metadata: status, reason, risk score, security alert from store
 POST /apps/expense_agent/trigger        → submit expense (JSON body, per-submitter session)
@@ -537,6 +543,7 @@ expenseiq/
 ├── .semgrep/
 │   └── rules.yaml        # Hardcoded API key detection (AIzaSy prefix)
 ├── fast_api_app.py       # FastAPI entry point — agent trigger + dashboard serving
+├── ARCHITECTURE.md        # Full system diagrams, sequence flows, component breakdown
 ├── .pre-commit-config.yaml
 ├── pyproject.toml
 └── .env                  # gitignored — GEMINI_API_KEY here
@@ -597,6 +604,8 @@ Single LLM reviews are unreliable — the model may omit the dollar amount, give
 **Why deterministic auto-approve below $100?**
 Two reasons: cost (zero LLM tokens for the majority of expenses) and auditability (the decision rule is a readable Python `if` statement, not a model's reasoning). Every AUTO_APPROVED outcome has an identical, reproducible reason: `"Amount $X.XX is below $100.0 threshold."` That's a compliance audit trail.
 
+📐 For the full rationale behind every architectural trade-off, see **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
+
 ---
 
 ## 👤 Author
@@ -624,4 +633,3 @@ Built for the **Kaggle AI Agents: Intensive Vibe Coding Capstone 2026**
 *The best defense against prompt injection is never calling the model.*
 
 </div>
----
