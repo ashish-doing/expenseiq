@@ -93,38 +93,38 @@ $999,999 + SSN + injection → Safety Gate → SSN redacted → risk 1.0 → ESC
 
 ## Screenshots
 
-### Agent Graph — ADK 2.0 Playground
-*Full workflow graph: START → parse_expense → security_checkpoint (diamond, 3 routes) → auto_approve_node | ReviewLoop | high_risk_node → record_outcome → END*
-
-![Agent Graph](docs/screenshots/01-agent-graph.png)
-
----
-
-### Path 1 — Auto-Approve (Events)
-*$45 team lunch: parse → security_checkpoint routes `auto_approve` → AUTO_APPROVED with risk_score: 0.1. Zero LLM calls.*
-
-![Auto Approve Events](docs/screenshots/02-auto-approve-events.png)
-
----
-
-### Path 1 — Auto-Approve (Traces)
-*Total latency: ~100ms on local dev hardware (single trace, not a benchmark). parse_expense → security_checkpoint → auto_approve_node → record_outcome. No model inference — pure deterministic.*
-
-![Auto Approve Traces](docs/screenshots/03-auto-approve-traces.png)
-
----
-
-### Path 3 — Security Gate: Injection + PII Caught
-*$999,999 expense with "Ignore previous instructions" + SSN: Event #2 shows raw SSN visible. Event #3: SSN → [REDACTED SSN], route: high_risk. Event #4: status ESCALATED, risk_score: 1, security_alert: true, redacted: ["SSN"]. The LLM was never called.*
-
-![Security Gate](docs/screenshots/04-security-gate.png)
-
----
-
-### Live CRM Dashboard
-*FastAPI + Chart.js dashboard at /dashboard: 4 KPI cards, spend-by-category donut, monthly spend bar chart, approval rate doughnut, recent expenses table with status badges and risk bars. Auto-refreshes every 10 seconds.*
-
-![Dashboard](docs/screenshots/05-dashboard.png)
+<table>
+<tr>
+<td width="50%">
+<img src="docs/screenshots/01-agent-graph.png" width="100%"/>
+<br/><em>ADK 2.3.0 Traces — Auto-approve path: 101.53ms total latency. parse_expense (25ms) → security_checkpoint (16ms) → auto_approve_node (13ms) → record_outcome (18ms). Full Workflow graph visible left. Zero LLM calls.</em>
+</td>
+<td width="50%">
+<img src="docs/screenshots/02-auto-approve-events.png" width="100%"/>
+<br/><em>Auto-approve Events — $45 team lunch: Event #3 shows security_checkpoint routes <code>auto_approve</code>, risk_score: 0.1. Event #4 confirms status: AUTO_APPROVED, security_alert: false. reason: "Amount $45.00 is below $100.0 threshold."</em>
+</td>
+</tr>
+<tr>
+<td width="50%">
+<img src="docs/screenshots/03-security-gate.png" width="100%"/>
+<br/><em>Security Gate Events — $999,999 injection + SSN: Event #3 shows SSN → [REDACTED SSN], route: high_risk. Event #4: status ESCALATED, risk_score: 1, security_alert: true, redacted_categories: ["SSN"]. LLM never called.</em>
+</td>
+<td width="50%">
+<img src="docs/screenshots/04-auto-approve-dashboard.png" width="100%"/>
+<br/><em>Dashboard — Auto-approve scenario: 9 total, 7 approved, avg risk 41.1%. Scenario Mode panel shows Status: AUTO_APPROVED, Risk: 10%, agent trace stream with workflow steps. Status distribution donut + spend-by-category chart update in real time.</em>
+</td>
+</tr>
+<tr>
+<td width="50%">
+<img src="docs/screenshots/05-hitl-dashboard.png" width="100%"/>
+<br/><em>Dashboard — HITL in action: $999,999 attacker@corp.com expense in Pending Approvals with Approve / Reject buttons. risk_score: 100%, security_alert flag raised. role-gated via X-Approver-Role header (manager | finance | auditor).</em>
+</td>
+<td width="50%">
+<img src="docs/screenshots/06-llm-review-dashboard.png" width="100%"/>
+<br/><em>Dashboard — LLM Review path: $250 Adobe Creative Cloud, bob@corp.com, status APPROVED. Agent trace shows PolicyAgent → LLMReviewer path. reason: "justified as individual software license under $500, within monthly software budget." Risk: 40%.</em>
+</td>
+</tr>
+</table>
 
 ---
 
