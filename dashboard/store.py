@@ -212,7 +212,10 @@ def get_stats() -> dict[str, Any]:
     expenses = get_all_expenses()
     pending_count = len(get_pending())
     total = len(expenses)
-    total_amount = sum(float(e.get("amount", 0)) for e in expenses)
+    total_amount = sum(
+        float(e.get("amount", 0)) for e in expenses
+        if e.get("status") in ("APPROVED", "AUTO_APPROVED")
+    )
     approved = sum(1 for e in expenses if e.get("status") in ("APPROVED", "AUTO_APPROVED"))
     rejected = sum(1 for e in expenses if e.get("status") == "REJECTED")
     escalated = sum(1 for e in expenses if e.get("status") == "ESCALATED")
