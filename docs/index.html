@@ -382,26 +382,41 @@
   </div>
 
   <div style="margin-top:48px;">
-    <div class="section-label" style="margin-bottom:16px;">In Action</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-        <img src="screenshots/01-agent-graph.png" style="width:100%;display:block;" alt="Agent Graph"/>
-        <div style="padding:12px 16px;font-size:0.78rem;color:var(--dim);">ADK 2.0 Workflow Graph — expense_agent</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-        <img src="screenshots/04-security-gate.png" style="width:100%;display:block;" alt="Security Gate"/>
-        <div style="padding:12px 16px;font-size:0.78rem;color:var(--dim);">Safety Gate — injection caught, LLM bypassed, SSN redacted</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-        <img src="screenshots/03-auto-approve-traces.png" style="width:100%;display:block;" alt="Traces"/>
-        <div style="padding:12px 16px;font-size:0.78rem;color:var(--dim);">Traces — <200ms total, zero LLM calls on auto-approve path</div>
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-        <img src="screenshots/05-dashboard.png" style="width:100%;display:block;" alt="Dashboard"/>
-        <div style="padding:12px 16px;font-size:0.78rem;color:var(--dim);">Live CRM Dashboard — Chart.js, auto-refresh 10s</div>
-      </div>
+  <div class="section-label" style="margin-bottom:16px;">In Action</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <img src="screenshots/01-agent-graph.png" style="width:100%;display:block;" alt="Agent Graph"/>
+      <div style="padding:12px 16px;font-size:0.78rem;color:var(--dim);">ADK 2.3.0 Traces — 101.53ms total. parse_expense → security_checkpoint → auto_approve_node → record_outcome. Full Workflow graph on left.</div>
     </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <img src="screenshots/02-auto-approve-events.png" style="width:100%;display:block;" alt="Auto-approve Events"/>
+      <div style="padding:12px 16px;font-size:0.78rem;color:var(--dim);">Auto-approve Events — $45 team lunch: route auto_approve, risk_score: 0.1, status: AUTO_APPROVED. Zero LLM calls.</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <img src="screenshots/03-security-gate.png" style="width:100%;display:block;" alt="Security Gate"/>
+      <div style="padding:12px 16px;font-size:0.78rem;color:var(--dim);">Security Gate — SSN → [REDACTED SSN], route: high_risk. status: ESCALATED, risk_score: 1, security_alert: true. LLM never called.</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <img src="screenshots/04-auto-approve-dashboard.png" style="width:100%;display:block;" alt="Dashboard Auto-approve"/>
+      <div style="padding:12px 16px;font-size:0.78rem;color:var(--dim);">Dashboard — Auto-approve scenario: Status AUTO_APPROVED, Risk 10%, agent trace stream. KPIs and charts update in real time.</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <img src="screenshots/05-hitl-dashboard.png" style="width:100%;display:block;" alt="HITL Dashboard"/>
+      <div style="padding:12px 16px;font-size:0.78rem;color:var(--dim);">Dashboard — HITL: $999,999 ESCALATED expense in Pending Approvals with Approve / Reject buttons. Role-gated (X-Approver-Role: manager).</div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <img src="screenshots/06-llm-review-dashboard.png" style="width:100%;display:block;" alt="LLM Review Dashboard"/>
+      <div style="padding:12px 16px;font-size:0.78rem;color:var(--dim);">Dashboard — LLM Review path: $250 Adobe CC approved. PolicyAgent → LLMReviewer trace visible. reason cites policy and budget. Risk: 40%.</div>
+    </div>
+
   </div>
+</div>
 </section>
 
 <!-- STACK -->
