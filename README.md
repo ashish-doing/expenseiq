@@ -19,14 +19,7 @@
   <strong>Kaggle AI Agents: Intensive Vibe Coding Capstone 2026 — Agents for Business Track</strong>
 </p>
 
-<p align="center">
-  🌐 <a href="https://ashish-doing.github.io/expenseiq">Landing Page</a> &nbsp;•&nbsp;
-  🚀 <a href="https://expenseiq-slnf.onrender.com/dashboard">Live Dashboard</a> &nbsp;•&nbsp;
-  🎬 <a href="#-demo-video">Demo Video</a> &nbsp;•&nbsp;
-  📐 <a href="./ARCHITECTURE.md">Full Architecture</a>
-</p>
-  🔄 <a href="#-self-correcting-review-loop">Review Loop</a> &nbsp;•&nbsp;
-</p>
+<p align="center">🌐 <a href="https://ashish-doing.github.io/expenseiq">Landing Page</a> &nbsp;•&nbsp; 🚀 <a href="https://expenseiq-slnf.onrender.com/dashboard">Live Dashboard</a> &nbsp;•&nbsp; 📄 <a href="https://expenseiq-slnf.onrender.com/docs">API Docs</a> &nbsp;•&nbsp; 🎬 <a href="#-demo-video">Demo Video</a> &nbsp;•&nbsp; 📐 <a href="./ARCHITECTURE.md">Full Architecture</a> &nbsp;•&nbsp; 🔄 <a href="#-self-correcting-review-loop">Review Loop</a></p>
 
 ---
 
