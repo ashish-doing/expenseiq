@@ -7,7 +7,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Google%20ADK-2.0-4285F4?style=for-the-badge&logo=google&logoColor=white" />
   <img src="https://img.shields.io/badge/Gemini-2.5%20Flash-4285F4?style=for-the-badge&logo=google&logoColor=white" />
-  <img src="https://img.shields.io/badge/MCP-Developer%20Knowledge-00B4D8?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/MCP-Policy%20Lookup-00B4D8?style=for-the-badge" />
   <img src="https://img.shields.io/badge/FastAPI-Dashboard-009688?style=for-the-badge&logo=fastapi" />
   <img src="https://img.shields.io/badge/Chart.js-CRM%20Dashboard-FF6384?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Tests-22%20unit%20%2B%2030%20eval-brightgreen?style=for-the-badge&logo=pytest" />
@@ -374,6 +374,8 @@ ExpenseIQ includes a deterministic eval harness that validates routing accuracy 
 | What's tested | `redact_pii()` → `detect_injection()` → `compute_risk_score()` → routing branch |
 | CI gate | Overall accuracy ≥ 95%; per-category accuracy ≥ 85% |
 | Isolation | Pure Python — no ADK agent, no LLM calls, no network |
+
+> The eval harness runs **30 pytest tests** total: 25 are per-expense routing checks (one per labeled case), plus 5 harness-level tests (the overall accuracy gate, 3 per-category accuracy gates, and a summary-printing test). The dataset itself contains 25 labeled expenses — that's what "25/25" in the results below refers to.
 
 ### Running the Eval
 
