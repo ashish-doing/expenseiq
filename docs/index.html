@@ -44,6 +44,8 @@
     .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 0.9rem; text-decoration: none; transition: all 0.2s; }
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+    .btn-demo { background: var(--danger); color: #fff; }
+    .btn-demo:hover { background: #dc2626; transform: translateY(-1px); }
     .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
     .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -168,6 +170,7 @@
   <a href="#security">Security</a>
   <a href="#architecture">Architecture</a>
   <a href="#stack">Stack</a>
+  <a href="https://youtu.be/6wqJy6BSU0o">Demo Video</a>
   <a href="https://expenseiq-slnf.onrender.com/dashboard" class="nav-cta">Live Demo →</a>
   <a href="https://github.com/ashish-doing/expenseiq" style="color:var(--muted);text-decoration:none;font-size:0.875rem;">GitHub</a>
 </nav>
@@ -179,6 +182,7 @@
   <p class="hero-sub">An AI agent that catches prompt injection, redacts PII, self-corrects its own reviews, and shows your business exactly where money is going — in real time.</p>
   <div class="hero-btns">
     <a href="https://expenseiq-slnf.onrender.com/dashboard" class="btn btn-primary">🚀 Live Dashboard →</a>
+    <a href="https://youtu.be/6wqJy6BSU0o" class="btn btn-demo">🎬 Watch Demo</a>
     <a href="https://github.com/ashish-doing/expenseiq" class="btn btn-ghost">GitHub →</a>
     <a href="#how-it-works" class="btn btn-ghost">See how it works ↓</a>
   </div>
@@ -331,7 +335,7 @@
       </tr>
       <tr>
         <td><span class="check">✅</span> Deployability</td>
-        <td>README + Video</td>
+        <td>README + Render</td>
         <td>3-command local setup: uv sync → adk web → uvicorn</td>
       </tr>
       <tr>
@@ -416,6 +420,16 @@
     </div>
 
   </div>
+
+  <div style="margin-top:48px;text-align:center;">
+    <div class="section-label" style="margin-bottom:16px;">Watch It Work</div>
+    <a href="https://youtu.be/6wqJy6BSU0o" style="display:inline-block;max-width:680px;width:100%;border-radius:12px;overflow:hidden;border:1px solid var(--border);">
+      <img src="https://img.youtube.com/vi/6wqJy6BSU0o/maxresdefault.jpg" style="width:100%;display:block;" alt="ExpenseIQ Demo Video"/>
+    </a>
+    <p style="margin-top:12px;font-size:0.85rem;color:var(--dim);">
+      <a href="https://youtu.be/6wqJy6BSU0o" style="color:var(--accent);text-decoration:none;">▶️ Watch the 5-minute demo on YouTube</a>
+    </p>
+  </div>
 </div>
 </section>
 
@@ -496,6 +510,7 @@ curl -X POST http://localhost:8080/apps/expense_agent/trigger \
   <p>The best defense against prompt injection is never calling the model.</p>
   <div class="cta-links">
     <a href="https://expenseiq-slnf.onrender.com/dashboard" class="btn btn-primary">🚀 Live Demo</a>
+    <a href="https://youtu.be/6wqJy6BSU0o" class="btn btn-demo">🎬 Watch Demo</a>
     <a href="https://github.com/ashish-doing/expenseiq" class="btn btn-ghost">⭐ GitHub</a>
     <a href="https://www.kaggle.com/competitions/vibecoding-agents-capstone-project" class="btn btn-ghost">Kaggle Competition</a>
     <a href="https://linkedin.com/in/ashish-kumar-014aaa3b9" class="btn btn-ghost">LinkedIn</a>
