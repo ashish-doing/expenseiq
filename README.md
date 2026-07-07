@@ -51,6 +51,7 @@ make submit-attack    # $999,999 + injection → ESCALATED, 0 LLM calls
 [![ExpenseIQ Demo](https://img.youtube.com/vi/6wqJy6BSU0o/maxresdefault.jpg)](https://youtu.be/6wqJy6BSU0o)
 
 ▶️ [Watch the 5-minute demo on YouTube](https://youtu.be/6wqJy6BSU0o)
+
 · Three paths live: Auto-approve (<200ms, 0 LLM calls) · Security Gate (injection + SSN caught, LLM bypassed) · Self-Correcting Review (PolicyAgent → BudgetAgent → LLMReviewer → ReviewValidator)
 
 ---
