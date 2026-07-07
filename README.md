@@ -19,7 +19,7 @@
   <strong>Kaggle AI Agents: Intensive Vibe Coding Capstone 2026 — Agents for Business Track</strong>
 </p>
 
-<p align="center">🌐 <a href="https://ashish-doing.github.io/expenseiq">Landing Page</a> &nbsp;•&nbsp; 🚀 <a href="https://expenseiq-slnf.onrender.com/dashboard">Live Dashboard</a> &nbsp;•&nbsp; 📄 <a href="https://expenseiq-slnf.onrender.com/docs">API Docs</a> &nbsp;•&nbsp; 🎬 <a href="#-demo-video">Demo Video</a> &nbsp;•&nbsp; 📐 <a href="./ARCHITECTURE.md">Full Architecture</a> &nbsp;•&nbsp; 🔄 <a href="#-self-correcting-review-loop">Review Loop</a></p>
+<p align="center">🌐 <a href="https://ashish-doing.github.io/expenseiq">Landing Page</a> &nbsp;•&nbsp; 🚀 <a href="https://expenseiq-slnf.onrender.com/dashboard">Live Dashboard</a> &nbsp;•&nbsp; 📄 <a href="https://expenseiq-slnf.onrender.com/docs">API Docs</a> &nbsp;•&nbsp; 🎬 <a href="https://youtu.be/6wqJy6BSU0o">Demo Video</a> &nbsp;•&nbsp; 📐 <a href="./ARCHITECTURE.md">Full Architecture</a> &nbsp;•&nbsp; 🔄 <a href="#-self-correcting-review-loop">Review Loop</a></p>
 
 ---
 
@@ -42,19 +42,16 @@ make submit-attack    # $999,999 + injection → ESCALATED, 0 LLM calls
 
 ---
 
-## 🌐 Live Demo
+## 🎬 Demo
 
-**Dashboard:** https://expenseiq-slnf.onrender.com/dashboard  
-**API Docs:** https://expenseiq-slnf.onrender.com/docs  
-**Landing Page:** https://ashish-doing.github.io/expenseiq
+[![🌐 Landing Page](https://img.shields.io/badge/🌐_VIEW-Landing%20Page-3B82F6?style=for-the-badge)](https://ashish-doing.github.io/expenseiq) [![🚀 Live Dashboard](https://img.shields.io/badge/🚀_TRY-Live%20Dashboard-10B981?style=for-the-badge)](https://expenseiq-slnf.onrender.com/dashboard) [![📄 API Docs](https://img.shields.io/badge/📄_VIEW-API%20Docs-64748B?style=for-the-badge)](https://expenseiq-slnf.onrender.com/docs)
 
-> ⚠️ Hosted on Render free tier — first load may take ~30s if instance is sleeping.
-
-## 🎬 Demo Video
+· Hosted on Render free tier — first load may take ~30s if the instance is sleeping.
 
 [![ExpenseIQ Demo](https://img.youtube.com/vi/6wqJy6BSU0o/maxresdefault.jpg)](https://youtu.be/6wqJy6BSU0o)
 
-▶️ [Watch the 5-minute demo on YouTube](https://youtu.be/6wqJy6BSU0o) · Three paths live: Auto-approve (<200ms, 0 LLM calls) · Security Gate (injection + SSN caught, LLM bypassed) · Self-Correcting Review (PolicyAgent → BudgetAgent → LLMReviewer → ReviewValidator)
+▶️ [Watch the 5-minute demo on YouTube](https://youtu.be/6wqJy6BSU0o)
+· Three paths live: Auto-approve (<200ms, 0 LLM calls) · Security Gate (injection + SSN caught, LLM bypassed) · Self-Correcting Review (PolicyAgent → BudgetAgent → LLMReviewer → ReviewValidator)
 
 ---
 
